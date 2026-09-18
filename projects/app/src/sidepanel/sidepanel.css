@@ -195,6 +195,21 @@ body, html {
   min-height: 220px;
 }
 
+.slot-card.slot-fader {
+  grid-column: span 1;
+  grid-row: span 2;
+  min-height: 280px;
+}
+
+.slot-card.slot-pad2x2 {
+  grid-column: span 2;
+}
+
+.slot-card.slot-pad4x4 {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
 @media (max-width: 360px) {
   .slot-card.slot-knob {
     grid-column: span 1;
@@ -209,6 +224,118 @@ body, html {
   margin-bottom: 8px;
 }
 
+/* PA Mixer Fader Widget */
+.fader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  gap: 8px;
+  touch-action: none;
+}
+
+.fader-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex: 1;
+  width: 100%;
+  padding: 8px 0;
+}
+
+.fader-scale {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 160px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.fader-scale-left {
+  align-items: flex-end;
+}
+
+.fader-scale-right {
+  align-items: flex-start;
+}
+
+.fader-track-wrapper {
+  position: relative;
+  width: 40px;
+  height: 180px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.fader-slot-line {
+  position: absolute;
+  width: 8px;
+  height: 160px;
+  background-color: #0b0d12;
+  border-radius: 4px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8), 0 0 1px rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.fader-fill-bar {
+  width: 100%;
+  background: linear-gradient(0deg, var(--primary) 0%, var(--primary-light) 100%);
+  border-radius: 4px;
+  box-shadow: 0 0 8px var(--primary-glow);
+  transition: height 0.05s linear;
+}
+
+.fader-cap {
+  position: absolute;
+  width: 44px;
+  height: 32px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #4b526d 0%, #202436 50%, #151824 100%);
+  border: 1px solid #5a6282;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.3), 0 6px 12px rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  left: calc(50% - 22px);
+  cursor: grab;
+  touch-action: none;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.fader-track-wrapper.dragging .fader-cap,
+.fader-cap:active {
+  cursor: grabbing;
+  border-color: var(--primary-light);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.4), 0 0 14px var(--primary-glow);
+}
+
+.fader-cap-stripe {
+  width: 28px;
+  height: 4px;
+  background-color: var(--primary);
+  border-radius: 2px;
+  box-shadow: 0 0 6px var(--primary-light);
+}
+
+.fader-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--primary-light);
+  letter-spacing: 0.5px;
+}
+
 /* Knob Widget */
 .knob-container {
   display: flex;
@@ -216,45 +343,311 @@ body, html {
   align-items: center;
   justify-content: center;
   touch-action: none; /* Crucial for touch dragging without page scroll */
-  cursor: grab;
   gap: 8px;
+  width: 100%;
+}
+
+.knob-dial-wrapper {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  cursor: grab;
+}
+
+.knob-dial-wrapper.dragging {
+  cursor: grabbing;
+}
+
+.knob-ticks-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.knob-tick {
+  stroke: var(--card-border);
+  stroke-linecap: round;
+  transition: stroke 0.15s ease, stroke-width 0.15s ease;
+}
+
+.knob-tick.minor {
+  stroke-width: 1.5;
+}
+
+.knob-tick.major {
+  stroke-width: 2.5;
+}
+
+.knob-tick.active {
+  stroke: var(--primary-light);
+}
+
+.knob-tick.major.active {
+  stroke: var(--primary);
+  filter: drop-shadow(0 0 2px var(--primary-light));
 }
 
 .knob-dial {
-  width: 110px;
-  height: 110px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   background: var(--knob-bg);
   border: 3px solid var(--knob-border);
   position: relative;
-  box-shadow: inset 0 2px 6px rgba(255,255,255,0.1), 0 8px 20px rgba(0,0,0,0.5);
+  box-shadow: inset 0 2px 6px rgba(255,255,255,0.12), 0 8px 20px rgba(0,0,0,0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: border-color 0.2s, box-shadow 0.2s;
+  touch-action: none;
 }
 
-.knob-container:active .knob-dial {
-  cursor: grabbing;
+.knob-dial-wrapper:active .knob-dial,
+.knob-dial-wrapper.dragging .knob-dial {
   border-color: var(--primary);
-  box-shadow: 0 0 16px var(--primary-glow);
+  box-shadow: inset 0 2px 6px rgba(255,255,255,0.2), 0 0 20px var(--primary-glow);
+}
+
+.knob-cap {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.15), rgba(0,0,0,0.4));
+  border: 1px solid var(--card-border);
+  box-shadow: inset 0 1px 3px rgba(255,255,255,0.2);
+  pointer-events: none;
 }
 
 .knob-pointer {
   position: absolute;
-  top: 10px;
+  top: 8px;
+  left: calc(50% - 2.5px);
   width: 5px;
-  height: 28px;
+  height: 26px;
   background-color: var(--primary);
   border-radius: 3px;
   box-shadow: 0 0 8px var(--primary-light);
-  transform-origin: bottom center;
+  transform-origin: center 42px;
+  pointer-events: none;
 }
 
 .knob-value {
   font-size: 18px;
   font-weight: 700;
   color: var(--primary-light);
+  letter-spacing: 0.5px;
+}
+
+/* Multi-Pad Widget */
+.multipad-grid {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  margin: auto 0;
+  touch-action: none;
+}
+
+.multipad-2x2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.multipad-4x4 {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.multipad-button {
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--card-border);
+  background: linear-gradient(180deg, #2d3246 0%, #1e2130 100%);
+  color: var(--text-main);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.15), 0 4px 8px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  touch-action: none;
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s ease, border-color 0.15s;
+  padding: 4px;
+}
+
+.multipad-button.pressed,
+.multipad-button:active {
+  transform: translateY(3px) scale(0.96);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.multipad-button.active {
+  background: linear-gradient(180deg, var(--primary-light) 0%, var(--primary) 100%);
+  border-color: #a5b4fc;
+  color: #ffffff;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.4), 0 0 14px var(--primary-glow);
+}
+
+.multipad-button.active.pressed {
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.5), 0 0 8px var(--primary-glow);
+}
+
+.multipad-button .pad-icon {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.multipad-4x4 .pad-icon {
+  font-size: 14px;
+}
+
+.multipad-button .pad-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.multipad-button.active .pad-label {
+  color: #e0e7ff;
+}
+
+/* Protective Flip Switch Widget */
+.flip-switch-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: auto 0;
+  touch-action: none;
+}
+
+.flip-switch-housing {
+  position: relative;
+  width: 76px;
+  height: 96px;
+  background-color: #12141c;
+  border: 2px solid var(--card-border);
+  border-radius: 12px;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.8), 0 4px 10px rgba(0,0,0,0.3);
+  perspective: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+
+.flip-switch-base {
+  width: 60px;
+  height: 80px;
+  background: radial-gradient(circle at 50% 50%, #2a2e40, #161824);
+  border-radius: 8px;
+  border: 1px solid var(--card-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  cursor: pointer;
+}
+
+.flip-switch-lever {
+  width: 18px;
+  height: 40px;
+  background: linear-gradient(180deg, #94a3b8 0%, #475569 100%);
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+  transform-origin: bottom center;
+  transform: rotateX(25deg);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s, box-shadow 0.2s;
+}
+
+.flip-switch-lever.active {
+  transform: rotateX(-25deg);
+  background: linear-gradient(180deg, var(--danger) 0%, #b91c1c 100%);
+  border-color: #fca5a5;
+  box-shadow: 0 0 12px var(--danger-glow);
+}
+
+.flip-switch-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #334155;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.flip-switch-led.active {
+  background-color: var(--danger);
+  box-shadow: 0 0 8px var(--danger);
+}
+
+.flip-switch-cover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.22);
+  border: 2px dashed rgba(239, 68, 68, 0.7);
+  backdrop-filter: blur(2px);
+  box-shadow: inset 0 2px 8px rgba(255,255,255,0.2), 0 4px 12px rgba(0,0,0,0.4);
+  transform-origin: top center;
+  transform: rotateX(0deg);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  z-index: 2;
+}
+
+.flip-switch-housing.cover-open .flip-switch-cover {
+  transform: rotateX(-120deg);
+  background: rgba(239, 68, 68, 0.08);
+  box-shadow: none;
+  border-style: solid;
+}
+
+.flip-switch-cover-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 1px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  pointer-events: none;
+  background: rgba(0,0,0,0.4);
+  padding: 3px 6px;
+  border-radius: 4px;
+}
+
+.flip-switch-cover.swipe-hint {
+  animation: flipSwipeHint 0.4s ease-in-out;
+}
+
+@keyframes flipSwipeHint {
+  0% { transform: rotateX(0deg); }
+  50% { transform: rotateX(-25deg); }
+  100% { transform: rotateX(0deg); }
+}
+
+.flip-switch-status {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
 }
 
 /* Switch Widget */
