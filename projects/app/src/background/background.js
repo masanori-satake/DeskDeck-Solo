@@ -77,6 +77,7 @@ async function handleDeckAction(message) {
     // Media & Volume actions
     case 'set_volume':
     case 'toggle_mute':
+    case 'toggle_master_mute':
     case 'media_play_pause':
     case 'play_pause':
     case 'media_play':

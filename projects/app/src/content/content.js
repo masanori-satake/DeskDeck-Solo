@@ -50,7 +50,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
 
     case 'toggle_mute':
-      togglePageMediaMute();
+    case 'toggle_master_mute':
+      togglePageMediaMute(payload ? payload.enabled : undefined);
       sendResponse({ handled: true });
       break;
 
@@ -274,10 +275,14 @@ function setPageMediaVolume(valPercent) {
   });
 }
 
-function togglePageMediaMute() {
+function togglePageMediaMute(explicitMute) {
   const mediaElements = document.querySelectorAll('video, audio');
   mediaElements.forEach((m) => {
-    m.muted = !m.muted;
+    if (explicitMute !== undefined) {
+      m.muted = Boolean(explicitMute);
+    } else {
+      m.muted = !m.muted;
+    }
   });
 }
 
