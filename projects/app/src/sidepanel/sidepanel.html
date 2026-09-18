@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>DeskDeck-Solo Side Panel</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div id="deckApp" class="deck-app">
+    <!-- Header Controls -->
+    <header class="deck-header">
+      <div class="header-top">
+        <div class="brand-title">
+          <span class="brand-icon">🎛️</span>
+          <span class="brand-name">DeskDeck</span>
+        </div>
+        <button id="optionsBtn" class="icon-btn" aria-label="Settings" title="Settings">⚙️</button>
+      </div>
+
+      <div class="deck-selector-wrapper">
+        <label for="deckSelect" class="sr-only" data-i18n="deckSelectLabel">Select Deck</label>
+        <select id="deckSelect" class="deck-select">
+          <!-- Populated dynamically -->
+        </select>
+      </div>
+    </header>
+
+    <!-- Main Active Deck Hardware Area -->
+    <main class="deck-workspace">
+      <div id="deckTitleBar" class="deck-title-bar">
+        <h2 id="activeDeckTitle" class="active-deck-title">Media Deck</h2>
+        <span id="deckStatusBadge" class="status-badge">READY</span>
+      </div>
+
+      <div id="slotsContainer" class="slots-grid">
+        <!-- Hardware slots dynamically populated here -->
+      </div>
+    </main>
+
+    <!-- Deck Footer Status -->
+    <footer class="deck-footer">
+      <div class="footer-info">
+        <span class="footer-mode">TABLET MODE</span>
+        <span class="footer-copy">© 2026 Masanori SATAKE</span>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="sidepanel.js"></script>
+</body>
+</html>

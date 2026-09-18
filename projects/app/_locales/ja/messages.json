@@ -1,0 +1,58 @@
+{
+  "appName": {
+    "message": "DeskDeck-Solo",
+    "description": "拡張機能の名称"
+  },
+  "appDesc": {
+    "message": "Chromebookのタブレットモード向け、大型タッチ操作対応の仮想外付けハードウェアデッキ",
+    "description": "拡張機能の概要"
+  },
+  "deckSelectLabel": {
+    "message": "デッキ選択",
+    "description": "デッキ切替ドロップダウンのラベル"
+  },
+  "deckMedia": {
+    "message": "Media Deck",
+    "description": "メディア操作デッキ"
+  },
+  "deckMeeting": {
+    "message": "Meeting Deck",
+    "description": "会議操作デッキ"
+  },
+  "deckReader": {
+    "message": "Reader Deck",
+    "description": "閲覧操作デッキ"
+  },
+  "deckAudio": {
+    "message": "Audio Deck",
+    "description": "音響調整デッキ"
+  },
+  "deckStandard": {
+    "message": "Standard Deck",
+    "description": "標準操作デッキ"
+  },
+  "volumeKnob": {
+    "message": "音量調整ノブ",
+    "description": "ノブのラベル"
+  },
+  "optionsTitle": {
+    "message": "DeskDeck-Solo 設定",
+    "description": "設定画面のタイトル"
+  },
+  "soundEffects": {
+    "message": "効果音フィードバック",
+    "description": "設定項目: 効果音"
+  },
+  "hapticFeedback": {
+    "message": "タッチフィードバック",
+    "description": "設定項目: バイブレーション/フィードバック"
+  },
+  "save": {
+    "message": "保存",
+    "description": "保存ボタン"
+  },
+  "saved": {
+    "message": "設定を保存しました",
+    "description": "保存完了メッセージ"
+  }
+}
