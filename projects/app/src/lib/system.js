@@ -17,6 +17,10 @@ export async function getKeepAwakeStatus() {
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
     return new Promise((resolve) => {
       chrome.storage.local.get([STORAGE_KEY_KEEP_AWAKE], (result) => {
+        if (chrome.runtime && chrome.runtime.lastError) {
+          resolve(false);
+          return;
+        }
         resolve(Boolean(result[STORAGE_KEY_KEEP_AWAKE]));
       });
     });
@@ -47,8 +51,14 @@ export async function toggleKeepAwake(enable) {
   }
 
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-    await new Promise((resolve) => {
-      chrome.storage.local.set({ [STORAGE_KEY_KEEP_AWAKE]: shouldEnable }, () => resolve());
+    await new Promise((resolve, reject) => {
+      chrome.storage.local.set({ [STORAGE_KEY_KEEP_AWAKE]: shouldEnable }, () => {
+        if (chrome.runtime && chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+          return;
+        }
+        resolve();
+      });
     });
   }
 
