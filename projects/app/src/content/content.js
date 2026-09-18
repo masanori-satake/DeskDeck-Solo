@@ -7,13 +7,6 @@ let darkOverlayHost = null;
 let dimmerHost = null;
 let dimmerOverlay = null;
 
-/**
- * Apply deck actions to the current page and report whether they were handled.
- * @param {Object} message - Deck action and optional payload.
- * @param {chrome.runtime.MessageSender} sender - Message sender metadata.
- * @param {Function} sendResponse - Callback used to return the handling result.
- * @returns {boolean|undefined} Whether the response channel should remain open.
- */
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || !message.action) return;
 
@@ -353,6 +346,22 @@ function setMicLevel(valPercent) {
 }
 
 /**
+ * Get appropriate parent element for dimmer overlay host.
+ * If non-root element is in fullscreen, attaches into document.fullscreenElement.
+ * @returns {Element}
+ */
+function getDimmerTargetParent() {
+  if (
+    document.fullscreenElement &&
+    document.fullscreenElement !== document.documentElement &&
+    document.fullscreenElement !== document.body
+  ) {
+    return document.fullscreenElement;
+  }
+  return document.body || document.documentElement;
+}
+
+/**
  * Set pseudo brightness overlay opacity (0.0 to 0.8 / 0% to 80%)
  * Injects top-layer black overlay with pointer-events: none.
  * @param {number} opacityVal - Desired overlay opacity (0.0 to 0.8)
@@ -375,6 +384,8 @@ function setDimmerOpacity(opacityVal) {
     return 0;
   }
 
+  const targetParent = getDimmerTargetParent();
+
   if (!dimmerHost || !document.contains(dimmerHost)) {
     dimmerHost = document.createElement('div');
     dimmerHost.id = 'deskdeck-dimmer-host';
@@ -394,12 +405,24 @@ function setDimmerOpacity(opacityVal) {
       transition: opacity 0.15s ease;
     `;
     shadowRoot.appendChild(dimmerOverlay);
-    (document.body || document.documentElement).appendChild(dimmerHost);
+    targetParent.appendChild(dimmerHost);
+  } else if (dimmerHost.parentElement !== targetParent) {
+    targetParent.appendChild(dimmerHost);
   }
 
   dimmerOverlay.style.opacity = opacity.toFixed(3);
   return opacity;
 }
+
+// Reparent dimmer overlay dynamically when entering/exiting fullscreen mode
+document.addEventListener('fullscreenchange', () => {
+  if (dimmerHost && document.contains(dimmerHost)) {
+    const targetParent = getDimmerTargetParent();
+    if (dimmerHost.parentElement !== targetParent) {
+      targetParent.appendChild(dimmerHost);
+    }
+  }
+});
 
 function toggleDarkReaderOverlay() {
   if (darkOverlayHost) {

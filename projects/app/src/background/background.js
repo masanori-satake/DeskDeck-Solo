@@ -5,6 +5,7 @@
 
 import {
   toggleKeepAwake,
+  getKeepAwakeStatus,
   muteBackgroundTabs,
   setTabBrightness
 } from '../lib/system.js';
@@ -18,13 +19,18 @@ chrome.runtime.onInstalled.addListener(() => {
   }
 });
 
-/**
- * Route incoming deck actions and return their asynchronous results.
- * @param {Object} message - Deck action and optional payload.
- * @param {chrome.runtime.MessageSender} sender - Message sender metadata.
- * @param {Function} sendResponse - Callback used to return the action result.
- * @returns {boolean} Whether the response channel should remain open.
- */
+// Restore keep awake state if persisted across Service Worker restarts
+getKeepAwakeStatus().then((isActive) => {
+  if (isActive && typeof chrome !== 'undefined' && chrome.power) {
+    try {
+      chrome.power.requestKeepAwake('display');
+    } catch (err) {
+      console.warn('Restoring keep awake on SW restart failed:', err);
+    }
+  }
+});
+
+// Message listener for deck actions
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || !message.action) return false;
 

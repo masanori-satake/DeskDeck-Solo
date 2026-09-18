@@ -7,15 +7,32 @@
  * and background tab muting (chrome.tabs).
  */
 
-let isKeepAwakeActive = false;
+const STORAGE_KEY_KEEP_AWAKE = 'deskdeck_keep_awake';
+
+/**
+ * Get current keep awake status from storage.
+ * @returns {Promise<boolean>}
+ */
+export async function getKeepAwakeStatus() {
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+    return new Promise((resolve) => {
+      chrome.storage.local.get([STORAGE_KEY_KEEP_AWAKE], (result) => {
+        resolve(Boolean(result[STORAGE_KEY_KEEP_AWAKE]));
+      });
+    });
+  }
+  return false;
+}
 
 /**
  * Toggle or explicitly set keep awake (sleep prevention) state using chrome.power API.
+ * Persists state to chrome.storage.local to survive Service Worker restarts.
  * @param {boolean} [enable] - Optional explicit state. If undefined, toggles current state.
  * @returns {Promise<boolean>} Current keep awake status.
  */
 export async function toggleKeepAwake(enable) {
-  const shouldEnable = enable !== undefined ? Boolean(enable) : !isKeepAwakeActive;
+  const currentStatus = await getKeepAwakeStatus();
+  const shouldEnable = enable !== undefined ? Boolean(enable) : !currentStatus;
 
   if (typeof chrome !== 'undefined' && chrome.power) {
     try {
@@ -24,23 +41,18 @@ export async function toggleKeepAwake(enable) {
       } else {
         chrome.power.releaseKeepAwake();
       }
-      isKeepAwakeActive = shouldEnable;
     } catch (err) {
       console.warn('chrome.power keep awake operation failed:', err);
     }
-  } else {
-    isKeepAwakeActive = shouldEnable;
   }
 
-  return isKeepAwakeActive;
-}
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+    await new Promise((resolve) => {
+      chrome.storage.local.set({ [STORAGE_KEY_KEEP_AWAKE]: shouldEnable }, () => resolve());
+    });
+  }
 
-/**
- * Get current keep awake status.
- * @returns {boolean}
- */
-export function getKeepAwakeStatus() {
-  return isKeepAwakeActive;
+  return shouldEnable;
 }
 
 /**
