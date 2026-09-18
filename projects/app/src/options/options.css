@@ -1,0 +1,145 @@
+:root {
+  --bg-color: #121318;
+  --card-bg: #1e2029;
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  --border: #2d313e;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg-color: #f3f4f6;
+    --card-bg: #ffffff;
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --text-main: #111827;
+    --text-muted: #6b7280;
+    --border: #e5e7eb;
+  }
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.options-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 480px;
+  padding: 24px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-area .icon {
+  font-size: 28px;
+}
+
+.logo-area h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.setting-item label {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.toggle-checkbox {
+  width: 48px;
+  height: 28px;
+  appearance: none;
+  background-color: var(--border);
+  border-radius: 14px;
+  position: relative;
+  cursor: pointer;
+  outline: none;
+  transition: background-color 0.2s ease;
+}
+
+.toggle-checkbox:checked {
+  background-color: var(--primary);
+}
+
+.toggle-checkbox::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  transition: transform 0.2s ease;
+}
+
+.toggle-checkbox:checked::before {
+  transform: translateX(20px);
+}
+
+.action-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.btn-primary {
+  min-height: 48px;
+  padding: 0 24px;
+  border-radius: 12px;
+  border: none;
+  background-color: var(--primary);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+.status-msg {
+  color: #10b981;
+  font-size: 14px;
+  font-weight: 500;
+}

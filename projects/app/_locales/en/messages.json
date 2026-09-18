@@ -1,0 +1,58 @@
+{
+  "appName": {
+    "message": "DeskDeck-Solo",
+    "description": "Application name"
+  },
+  "appDesc": {
+    "message": "Virtual physical deck controller optimized for Chromebook tablet touch controls",
+    "description": "Application description"
+  },
+  "deckSelectLabel": {
+    "message": "Select Deck",
+    "description": "Label for deck selector dropdown"
+  },
+  "deckMedia": {
+    "message": "Media Deck",
+    "description": "Media control deck"
+  },
+  "deckMeeting": {
+    "message": "Meeting Deck",
+    "description": "Meeting control deck"
+  },
+  "deckReader": {
+    "message": "Reader Deck",
+    "description": "Reader control deck"
+  },
+  "deckAudio": {
+    "message": "Audio Deck",
+    "description": "Audio adjustment deck"
+  },
+  "deckStandard": {
+    "message": "Standard Deck",
+    "description": "Standard deck"
+  },
+  "volumeKnob": {
+    "message": "Volume Knob",
+    "description": "Knob label"
+  },
+  "optionsTitle": {
+    "message": "DeskDeck-Solo Settings",
+    "description": "Options page title"
+  },
+  "soundEffects": {
+    "message": "Sound Feedback",
+    "description": "Options item: Sound feedback"
+  },
+  "hapticFeedback": {
+    "message": "Haptic Feedback",
+    "description": "Options item: Touch feedback"
+  },
+  "save": {
+    "message": "Save",
+    "description": "Save button"
+  },
+  "saved": {
+    "message": "Settings saved successfully",
+    "description": "Save success message"
+  }
+}

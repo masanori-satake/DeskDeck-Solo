@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeskDeck-Solo | Virtual Hardware Controller for Chromebook Tablet Mode</title>
+  <style>
+    :root {
+      --bg-color: #0b0f19;
+      --card-bg: #151c2c;
+      --card-border: #232d42;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Header */
+    header {
+      padding: 24px 0;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-main);
+      text-decoration: none;
+    }
+
+    /* Hero */
+    .hero {
+      padding: 80px 0 60px;
+      text-align: center;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 20px;
+      background-color: rgba(99, 102, 241, 0.15);
+      color: var(--primary);
+      border: 1px solid var(--primary);
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      font-size: 48px;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      font-size: 20px;
+      color: var(--text-muted);
+      max-width: 720px;
+      margin: 0 auto 36px;
+    }
+
+    /* Features Grid */
+    .features {
+      padding: 60px 0;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    .feature-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 32px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--primary);
+    }
+
+    .feature-icon {
+      font-size: 36px;
+      margin-bottom: 16px;
+    }
+
+    .feature-card h3 {
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+
+    .feature-card p {
+      color: var(--text-muted);
+      font-size: 15px;
+    }
+
+    /* Decks Overview */
+    .decks-section {
+      padding: 60px 0;
+    }
+
+    .section-title {
+      text-align: center;
+      font-size: 32px;
+      margin-bottom: 40px;
+    }
+
+    .decks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .deck-pill {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .deck-pill .icon {
+      font-size: 28px;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .deck-pill h4 {
+      font-size: 16px;
+      color: var(--text-main);
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--card-border);
+      padding: 40px 0;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <a href="#" class="logo">
+        <span>🎛️</span>
+        <span>DeskDeck-Solo</span>
+      </a>
+      <span class="badge">Pure Vanilla ES Modules</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <span class="badge">Chrome Extension for Chromebook Tablet Mode</span>
+        <h1>Chromebookのサイドパネルに再現する<br>大型タッチ仮想ハードウェアデッキ</h1>
+        <p>
+          外部ライブラリ・外部通信を一切使わず完全ローカルで動作。
+          大型回転ノブ、トグルスイッチ、大判タッチボタンでChromebookのタブレット操作を物理コントローラーのように最適化します。
+        </p>
+      </div>
+    </section>
+
+    <section class="features">
+      <div class="container">
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <h3>完全ローカル・依存なし</h3>
+            <p>WebpackやReact等のビルドツール・フレームワークを使わない Pure Vanilla JavaScript / HTML5 / CSS3 構成。</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">👆</div>
+            <h3>大型タッチターゲット</h3>
+            <p>Pointer Events を使用した大型回転ノブやトグルスイッチを搭載。Chromebookのタッチパネルで快適にドラッグ操作が可能。</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🔒</div>
+            <h3>プライバシー＆セキュリティ</h3>
+            <p>外部サーバー通信やアナリティクスを一切含まないManifest V3準拠の完全スタンドアロン構造。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="decks-section">
+      <div class="container">
+        <h2 class="section-title">プリセットデッキ一覧</h2>
+        <div class="decks-grid">
+          <div class="deck-pill">
+            <span class="icon">🎵</span>
+            <h4>Media Deck</h4>
+          </div>
+          <div class="deck-pill">
+            <span class="icon">📹</span>
+            <h4>Meeting Deck</h4>
+          </div>
+          <div class="deck-pill">
+            <span class="icon">📖</span>
+            <h4>Reader Deck</h4>
+          </div>
+          <div class="deck-pill">
+            <span class="icon">🎧</span>
+            <h4>Audio Deck</h4>
+          </div>
+          <div class="deck-pill">
+            <span class="icon">🖥️</span>
+            <h4>Standard Deck</h4>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>Copyright (c) 2026 Masanori SATAKE. Released under the MIT License.</p>
+    </div>
+  </footer>
+</body>
+</html>
