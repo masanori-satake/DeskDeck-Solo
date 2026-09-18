@@ -17,7 +17,7 @@ export const DECK_PRESETS = {
       {
         id: 'media_volume',
         type: 'knob',
-        label: 'Volume',
+        label: 'Master Volume',
         min: 0,
         max: 100,
         defaultValue: 70,
@@ -26,35 +26,35 @@ export const DECK_PRESETS = {
         action: 'set_volume'
       },
       {
+        id: 'media_fader',
+        type: 'fader',
+        label: 'Playback Fader',
+        min: 0,
+        max: 100,
+        defaultValue: 80,
+        step: 1,
+        unit: '%',
+        action: 'set_fader'
+      },
+      {
+        id: 'media_pad',
+        type: 'pad2x2',
+        label: 'Transport Pad Grid',
+        defaultValue: {},
+        action: 'pad_action',
+        pads: [
+          { id: 'play', label: 'Play', icon: '▶' },
+          { id: 'pause', label: 'Pause', icon: '⏸' },
+          { id: 'prev', label: 'Prev', icon: '⏮' },
+          { id: 'next', label: 'Next', icon: '⏭' }
+        ]
+      },
+      {
         id: 'media_mute',
         type: 'switch',
-        label: 'Mute',
+        label: 'Soft Mute',
         defaultValue: false,
         action: 'toggle_mute'
-      },
-      {
-        id: 'media_play_pause',
-        type: 'button',
-        label: 'Play / Pause',
-        icon: '⏯',
-        variant: 'primary',
-        action: 'media_play_pause'
-      },
-      {
-        id: 'media_prev',
-        type: 'button',
-        label: 'Prev Track',
-        icon: '⏮',
-        variant: 'secondary',
-        action: 'media_prev'
-      },
-      {
-        id: 'media_next',
-        type: 'button',
-        label: 'Next Track',
-        icon: '⏭',
-        variant: 'secondary',
-        action: 'media_next'
       },
       {
         id: 'media_fullscreen',
@@ -75,7 +75,7 @@ export const DECK_PRESETS = {
       {
         id: 'mic_volume',
         type: 'knob',
-        label: 'Mic Level',
+        label: 'Mic Gain',
         min: 0,
         max: 100,
         defaultValue: 80,
@@ -84,11 +84,22 @@ export const DECK_PRESETS = {
         action: 'set_mic_level'
       },
       {
-        id: 'mic_mute',
-        type: 'switch',
-        label: 'Mic Mute',
+        id: 'broadcast_fader',
+        type: 'fader',
+        label: 'Stream Level',
+        min: 0,
+        max: 100,
+        defaultValue: 90,
+        step: 1,
+        unit: '%',
+        action: 'set_stream_level'
+      },
+      {
+        id: 'emergency_cut',
+        type: 'flip_switch',
+        label: 'Emergency Guard',
         defaultValue: false,
-        action: 'toggle_mic_mute'
+        action: 'toggle_emergency_cut'
       },
       {
         id: 'camera_toggle',
@@ -98,12 +109,17 @@ export const DECK_PRESETS = {
         action: 'toggle_camera'
       },
       {
-        id: 'raise_hand',
-        type: 'button',
-        label: 'Raise Hand',
-        icon: '✋',
-        variant: 'primary',
-        action: 'raise_hand'
+        id: 'meeting_pad',
+        type: 'pad2x2',
+        label: 'Reactions Pad',
+        defaultValue: {},
+        action: 'pad_reaction',
+        pads: [
+          { id: 'hand', label: 'Hand', icon: '✋' },
+          { id: 'applause', label: 'Clap', icon: '👏' },
+          { id: 'thumbsup', label: 'Like', icon: '👍' },
+          { id: 'heart', label: 'Love', icon: '❤️' }
+        ]
       },
       {
         id: 'leave_call',
@@ -124,7 +140,7 @@ export const DECK_PRESETS = {
       {
         id: 'reader_zoom',
         type: 'knob',
-        label: 'Zoom Level',
+        label: 'Zoom Dial',
         min: 50,
         max: 200,
         defaultValue: 100,
@@ -133,27 +149,42 @@ export const DECK_PRESETS = {
         action: 'set_zoom'
       },
       {
+        id: 'brightness_fader',
+        type: 'fader',
+        label: 'Brightness',
+        min: 10,
+        max: 100,
+        defaultValue: 85,
+        step: 1,
+        unit: '%',
+        action: 'set_brightness'
+      },
+      {
+        id: 'contrast_guard',
+        type: 'flip_switch',
+        label: 'High Contrast',
+        defaultValue: false,
+        action: 'toggle_contrast_lock'
+      },
+      {
         id: 'dark_mode',
         type: 'switch',
-        label: 'Dark Mode',
+        label: 'Dark Theme',
         defaultValue: true,
         action: 'toggle_dark_reader'
       },
       {
-        id: 'page_up',
-        type: 'button',
-        label: 'Page Up',
-        icon: '▲',
-        variant: 'secondary',
-        action: 'page_up'
-      },
-      {
-        id: 'page_down',
-        type: 'button',
-        label: 'Page Down',
-        icon: '▼',
-        variant: 'secondary',
-        action: 'page_down'
+        id: 'reader_pad',
+        type: 'pad2x2',
+        label: 'Nav Pad Grid',
+        defaultValue: {},
+        action: 'pad_nav',
+        pads: [
+          { id: 'top', label: 'Top', icon: '⏫' },
+          { id: 'pgup', label: 'PgUp', icon: '▲' },
+          { id: 'pgdn', label: 'PgDn', icon: '▼' },
+          { id: 'bot', label: 'Bot', icon: '⏬' }
+        ]
       },
       {
         id: 'reader_toggle',
@@ -183,15 +214,22 @@ export const DECK_PRESETS = {
         action: 'set_master_gain'
       },
       {
-        id: 'bass_boost',
-        type: 'knob',
-        label: 'Bass Level',
-        min: -12,
-        max: 12,
+        id: 'main_fader',
+        type: 'fader',
+        label: 'PA Channel Fader',
+        min: -60,
+        max: 10,
         defaultValue: 0,
         step: 1,
         unit: 'dB',
-        action: 'set_bass_level'
+        action: 'set_channel_fader'
+      },
+      {
+        id: 'soundboard_pad',
+        type: 'pad4x4',
+        label: '16-Pad Soundboard FX',
+        defaultValue: {},
+        action: 'soundboard_trigger'
       },
       {
         id: 'master_mute',
@@ -219,7 +257,7 @@ export const DECK_PRESETS = {
       {
         id: 'standard_dial',
         type: 'knob',
-        label: 'Scroll Dial',
+        label: 'Scroll Wheel',
         min: 0,
         max: 100,
         defaultValue: 50,
@@ -228,36 +266,28 @@ export const DECK_PRESETS = {
         action: 'scroll_dial'
       },
       {
-        id: 'new_tab',
-        type: 'button',
-        label: 'New Tab',
-        icon: '➕',
-        variant: 'primary',
-        action: 'new_tab'
+        id: 'speed_fader',
+        type: 'fader',
+        label: 'Scroll Speed',
+        min: 1,
+        max: 10,
+        defaultValue: 5,
+        step: 1,
+        unit: 'x',
+        action: 'set_scroll_speed'
       },
       {
-        id: 'close_tab',
-        type: 'button',
-        label: 'Close Tab',
-        icon: '✖',
-        variant: 'danger',
-        action: 'close_tab'
-      },
-      {
-        id: 'prev_tab',
-        type: 'button',
-        label: 'Prev Tab',
-        icon: '◀',
-        variant: 'secondary',
-        action: 'prev_tab'
-      },
-      {
-        id: 'next_tab',
-        type: 'button',
-        label: 'Next Tab',
-        icon: '▶',
-        variant: 'secondary',
-        action: 'next_tab'
+        id: 'tab_pad',
+        type: 'pad2x2',
+        label: 'Tab Management Grid',
+        defaultValue: {},
+        action: 'pad_tab',
+        pads: [
+          { id: 'new', label: 'New', icon: '➕' },
+          { id: 'close', label: 'Close', icon: '✖' },
+          { id: 'prev', label: 'Prev', icon: '◀' },
+          { id: 'next', label: 'Next', icon: '▶' }
+        ]
       },
       {
         id: 'bookmark_page',
