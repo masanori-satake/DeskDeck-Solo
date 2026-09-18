@@ -3,7 +3,9 @@
  * Executes page-level deck controls (media playback, scrolling, page zoom/theme)
  */
 
-function handleContentMessage(message, sender, sendResponse) {
+let darkOverlayHost = null;
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || !message.action) return;
 
   const { action, payload } = message;
@@ -15,7 +17,7 @@ function handleContentMessage(message, sender, sendResponse) {
       break;
 
     case 'set_volume':
-      setPageMediaVolume(payload.value);
+      setPageMediaVolume(payload ? payload.value : 100);
       sendResponse({ handled: true });
       break;
 
@@ -43,6 +45,11 @@ function handleContentMessage(message, sender, sendResponse) {
       sendResponse({ handled: true });
       break;
 
+    case 'set_mic_level':
+      setMicLevel(payload ? payload.value : 100);
+      sendResponse({ handled: true, micLevel: payload ? payload.value : 100 });
+      break;
+
     case 'page_up':
       window.scrollBy({ top: -window.innerHeight * 0.8, behavior: 'smooth' });
       sendResponse({ handled: true });
@@ -54,7 +61,7 @@ function handleContentMessage(message, sender, sendResponse) {
       break;
 
     case 'scroll_dial':
-      const delta = (payload.value - 50) * 10;
+      const delta = ((payload ? payload.value : 50) - 50) * 10;
       window.scrollBy({ top: delta, behavior: 'smooth' });
       sendResponse({ handled: true });
       break;
@@ -77,12 +84,7 @@ function handleContentMessage(message, sender, sendResponse) {
   }
 
   return true;
-}
-
-if (!globalThis.__deskDeckContentListenerRegistered) {
-  globalThis.__deskDeckContentListenerRegistered = true;
-  chrome.runtime.onMessage.addListener(handleContentMessage);
-}
+});
 
 function toggleMediaPlayback() {
   const mediaElements = document.querySelectorAll('video, audio');
@@ -110,6 +112,18 @@ function setPageMediaVolume(valPercent) {
   });
 }
 
+function setMicLevel(valPercent) {
+  // If web meeting media stream input elements exist or page audio context exists
+  const volume = Math.max(0, Math.min(1, valPercent / 100));
+  const audioTracks = [];
+  if (window.stream && window.stream.getAudioTracks) {
+    window.stream.getAudioTracks().forEach((track) => audioTracks.push(track));
+  }
+  audioTracks.forEach((track) => {
+    track.enabled = volume > 0;
+  });
+}
+
 function togglePageMediaMute() {
   const mediaElements = document.querySelectorAll('video, audio');
   mediaElements.forEach((m) => {
@@ -127,12 +141,16 @@ function skipMediaTrack(direction) {
 }
 
 function toggleDarkReaderOverlay() {
-  let overlay = document.getElementById('deskdeck-dark-filter');
-  if (overlay) {
-    overlay.remove();
+  if (darkOverlayHost) {
+    darkOverlayHost.remove();
+    darkOverlayHost = null;
   } else {
-    overlay = document.createElement('div');
-    overlay.id = 'deskdeck-dark-filter';
+    darkOverlayHost = document.createElement('div');
+    darkOverlayHost.id = 'deskdeck-dark-host';
+    darkOverlayHost.style.cssText = 'all: initial;';
+
+    const shadowRoot = darkOverlayHost.attachShadow({ mode: 'open' });
+    const overlay = document.createElement('div');
     overlay.style.cssText = `
       position: fixed;
       top: 0;
@@ -141,10 +159,11 @@ function toggleDarkReaderOverlay() {
       height: 100vh;
       background-color: rgba(0, 0, 0, 0.35);
       pointer-events: none;
-      z-index: 9999999;
+      z-index: 2147483647;
       mix-blend-mode: multiply;
     `;
-    document.body.appendChild(overlay);
+    shadowRoot.appendChild(overlay);
+    (document.body || document.documentElement).appendChild(darkOverlayHost);
   }
 }
 

@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate JavaScript Syntax
+        run: |
+          for file in $(find projects/app/src -name "*.js"); do
+            echo "Checking $file..."
+            node --check "$file"
+          done
+
+      - name: Validate JSON Files
+        run: |
+          node -e '
+            const fs = require("fs");
+            const files = ["projects/app/manifest.json", "projects/app/_locales/ja/messages.json", "projects/app/_locales/en/messages.json"];
+            files.forEach(f => JSON.parse(fs.readFileSync(f, "utf8")));
+            console.log("All JSON files are valid!");
+          '

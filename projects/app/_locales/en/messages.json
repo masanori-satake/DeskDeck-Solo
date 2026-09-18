@@ -54,13 +54,5 @@
   "saved": {
     "message": "Settings saved successfully",
     "description": "Save success message"
-  },
-  "switchOn": {
-    "message": "ON",
-    "description": "Enabled switch status"
-  },
-  "switchOff": {
-    "message": "OFF",
-    "description": "Disabled switch status"
   }
 }

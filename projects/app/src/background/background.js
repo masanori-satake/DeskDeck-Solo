@@ -116,20 +116,9 @@ async function handleDeckAction(message) {
 async function sendToTab(tabId, msg) {
   try {
     return await chrome.tabs.sendMessage(tabId, msg);
-  } catch (sendError) {
-    try {
-      await chrome.scripting.executeScript({
-        target: { tabId },
-        files: ['src/content/content.js']
-      });
-      return await chrome.tabs.sendMessage(tabId, msg);
-    } catch (injectionError) {
-      // activeTab does not cover restricted pages or tabs not opened via the extension action.
-      return {
-        status: 'no_content_script',
-        message: injectionError.message || sendError.message
-      };
-    }
+  } catch (err) {
+    // Content script might not be injected in chrome:// or special pages
+    return { status: 'no_content_script', message: err.message };
   }
 }
 

@@ -54,13 +54,5 @@
   "saved": {
     "message": "設定を保存しました",
     "description": "保存完了メッセージ"
-  },
-  "switchOn": {
-    "message": "オン",
-    "description": "スイッチが有効な状態"
-  },
-  "switchOff": {
-    "message": "オフ",
-    "description": "スイッチが無効な状態"
   }
 }

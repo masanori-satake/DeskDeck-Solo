@@ -26,11 +26,7 @@ export async function getActiveDeckId() {
       });
     });
   } else {
-    try {
-      return localStorage.getItem(STORAGE_KEYS.ACTIVE_DECK) || 'media';
-    } catch {
-      return 'media';
-    }
+    return localStorage.getItem(STORAGE_KEYS.ACTIVE_DECK) || 'media';
   }
 }
 
@@ -47,11 +43,7 @@ export async function setActiveDeckId(deckId) {
       });
     });
   } else {
-    try {
-      localStorage.setItem(STORAGE_KEYS.ACTIVE_DECK, deckId);
-    } catch (error) {
-      console.warn('Unable to save the active deck to localStorage:', error);
-    }
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_DECK, deckId);
   }
 }
 
@@ -140,10 +132,6 @@ export async function saveSettings(settings) {
       });
     });
   } else {
-    try {
-      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
-    } catch (error) {
-      console.warn('Unable to save settings to localStorage:', error);
-    }
+    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
   }
 }
