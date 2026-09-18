@@ -142,6 +142,11 @@ function renderKnobWidget(cardContainer, slot) {
 
   const dial = document.createElement('div');
   dial.className = 'knob-dial';
+  dial.tabIndex = 0;
+  dial.setAttribute('role', 'slider');
+  dial.setAttribute('aria-label', slot.label);
+  dial.setAttribute('aria-valuemin', slot.min);
+  dial.setAttribute('aria-valuemax', slot.max);
 
   const pointer = document.createElement('div');
   pointer.className = 'knob-pointer';
@@ -162,6 +167,21 @@ function renderKnobWidget(cardContainer, slot) {
     const angle = -135 + norm * 270;
     pointer.style.transform = `rotate(${angle}deg)`;
     valueDisplay.textContent = `${value}${slot.unit || ''}`;
+    dial.setAttribute('aria-valuenow', value);
+    dial.setAttribute('aria-valuetext', `${value}${slot.unit || ''}`);
+  };
+
+  const commitKnobValue = (newValue) => {
+    if (newValue === val) return;
+
+    val = newValue;
+    currentSlotStates[slot.id] = val;
+    updateKnobUI(val);
+    saveDeckSlotStates(activeDeckId, currentSlotStates);
+    dispatchDeckAction(slot.action, { value: val });
+
+    if (appSettings.soundEffects) playKnobTickSound();
+    if (appSettings.hapticFeedback) triggerHaptic(8);
   };
 
   updateKnobUI(val);
@@ -188,16 +208,7 @@ function renderKnobWidget(cardContainer, slot) {
     let newVal = Math.round((startValue + (deltaY / 150) * range) / step) * step;
     newVal = Math.max(slot.min, Math.min(slot.max, newVal));
 
-    if (newVal !== val) {
-      val = newVal;
-      currentSlotStates[slot.id] = val;
-      updateKnobUI(val);
-      saveDeckSlotStates(activeDeckId, currentSlotStates);
-      dispatchDeckAction(slot.action, { value: val });
-
-      if (appSettings.soundEffects) playKnobTickSound();
-      if (appSettings.hapticFeedback) triggerHaptic(8);
-    }
+    commitKnobValue(newVal);
   };
 
   const onPointerUp = (e) => {
@@ -215,6 +226,21 @@ function renderKnobWidget(cardContainer, slot) {
   dial.addEventListener('pointermove', onPointerMove);
   dial.addEventListener('pointerup', onPointerUp);
   dial.addEventListener('pointercancel', onPointerUp);
+  dial.addEventListener('keydown', (e) => {
+    const direction = {
+      ArrowUp: 1,
+      ArrowRight: 1,
+      ArrowDown: -1,
+      ArrowLeft: -1
+    }[e.key];
+
+    if (!direction) return;
+
+    e.preventDefault();
+    const step = slot.step || 1;
+    const newVal = Math.max(slot.min, Math.min(slot.max, val + direction * step));
+    commitKnobValue(newVal);
+  });
 }
 
 /**
@@ -224,8 +250,19 @@ function renderSwitchWidget(cardContainer, slot) {
   const wrapper = document.createElement('div');
   wrapper.className = 'switch-wrapper';
 
-  const sw = document.createElement('div');
+  const sw = document.createElement('button');
+  sw.type = 'button';
   sw.className = `hw-switch ${currentSlotStates[slot.id] ? 'active' : ''}`;
+  sw.setAttribute('role', 'switch');
+  sw.setAttribute('aria-label', slot.label);
+  sw.setAttribute('aria-checked', currentSlotStates[slot.id] ? 'true' : 'false');
+
+  const onText = (typeof chrome !== 'undefined' && chrome.i18n)
+    ? chrome.i18n.getMessage('switchOn') || 'ON'
+    : 'ON';
+  const offText = (typeof chrome !== 'undefined' && chrome.i18n)
+    ? chrome.i18n.getMessage('switchOff') || 'OFF'
+    : 'OFF';
 
   const thumb = document.createElement('div');
   thumb.className = 'hw-switch-thumb';
@@ -233,7 +270,7 @@ function renderSwitchWidget(cardContainer, slot) {
 
   const statusLabel = document.createElement('span');
   statusLabel.className = 'switch-status-label';
-  statusLabel.textContent = currentSlotStates[slot.id] ? 'ON' : 'OFF';
+  statusLabel.textContent = currentSlotStates[slot.id] ? onText : offText;
 
   wrapper.appendChild(sw);
   wrapper.appendChild(statusLabel);
@@ -242,13 +279,14 @@ function renderSwitchWidget(cardContainer, slot) {
   sw.addEventListener('click', () => {
     const newState = !currentSlotStates[slot.id];
     currentSlotStates[slot.id] = newState;
+    sw.setAttribute('aria-checked', newState ? 'true' : 'false');
 
     if (newState) {
       sw.classList.add('active');
-      statusLabel.textContent = 'ON';
+      statusLabel.textContent = onText;
     } else {
       sw.classList.remove('active');
-      statusLabel.textContent = 'OFF';
+      statusLabel.textContent = offText;
     }
 
     saveDeckSlotStates(activeDeckId, currentSlotStates);

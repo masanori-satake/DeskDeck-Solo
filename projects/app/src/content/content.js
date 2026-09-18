@@ -3,7 +3,7 @@
  * Executes page-level deck controls (media playback, scrolling, page zoom/theme)
  */
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+function handleContentMessage(message, sender, sendResponse) {
   if (!message || !message.action) return;
 
   const { action, payload } = message;
@@ -77,7 +77,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   return true;
-});
+}
+
+if (!globalThis.__deskDeckContentListenerRegistered) {
+  globalThis.__deskDeckContentListenerRegistered = true;
+  chrome.runtime.onMessage.addListener(handleContentMessage);
+}
 
 function toggleMediaPlayback() {
   const mediaElements = document.querySelectorAll('video, audio');

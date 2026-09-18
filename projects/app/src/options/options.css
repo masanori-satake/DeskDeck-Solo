@@ -98,6 +98,11 @@ body {
   background-color: var(--primary);
 }
 
+.toggle-checkbox:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+
 .toggle-checkbox::before {
   content: '';
   position: absolute;

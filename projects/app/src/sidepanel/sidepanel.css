@@ -133,6 +133,15 @@ body, html {
   box-shadow: 0 2px 8px var(--primary-glow);
 }
 
+.deck-select:focus-visible,
+.icon-btn:focus-visible,
+.hw-button:focus-visible,
+.hw-switch:focus-visible,
+.knob-dial:focus-visible {
+  outline: 3px solid var(--primary-light);
+  outline-offset: 3px;
+}
+
 /* Workspace */
 .deck-workspace {
   flex: 1;
@@ -269,6 +278,7 @@ body, html {
 .hw-switch {
   width: 72px;
   height: 38px;
+  padding: 0;
   border-radius: 20px;
   background-color: var(--card-border);
   position: relative;
