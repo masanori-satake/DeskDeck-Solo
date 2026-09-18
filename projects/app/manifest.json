@@ -18,6 +18,16 @@
     "service_worker": "src/background/background.js",
     "type": "module"
   },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "src/content/content.js"
+      ]
+    }
+  ],
   "side_panel": {
     "default_path": "src/sidepanel/sidepanel.html"
   },
