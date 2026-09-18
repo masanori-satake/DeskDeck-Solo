@@ -1,6 +1,14 @@
 /**
  * Service Worker background script for DeskDeck-Solo
+ * Copyright (c) 2026 Masanori SATAKE
  */
+
+import {
+  toggleKeepAwake,
+  getKeepAwakeStatus,
+  muteBackgroundTabs,
+  setTabBrightness
+} from '../lib/system.js';
 
 // Enable side panel to open on extension icon click
 chrome.runtime.onInstalled.addListener(() => {
@@ -8,6 +16,17 @@ chrome.runtime.onInstalled.addListener(() => {
     chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((err) => {
       console.warn('Side panel behavior set error:', err);
     });
+  }
+});
+
+// Restore keep awake state if persisted across Service Worker restarts
+getKeepAwakeStatus().then((isActive) => {
+  if (isActive && typeof chrome !== 'undefined' && chrome.power) {
+    try {
+      chrome.power.requestKeepAwake('display');
+    } catch (err) {
+      console.warn('Restoring keep awake on SW restart failed:', err);
+    }
   }
 });
 
@@ -31,9 +50,34 @@ async function handleDeckAction(message) {
   const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
   switch (action) {
+    // System control actions
+    case 'toggle_keep_awake':
+    case 'keep_awake': {
+      const isKeepAwake = await toggleKeepAwake(payload ? payload.enabled : undefined);
+      return { keepAwake: isKeepAwake };
+    }
+
+    case 'mute_background_tabs':
+    case 'mute_tabs': {
+      const muteResult = await muteBackgroundTabs();
+      return muteResult;
+    }
+
+    case 'set_brightness': {
+      const val = payload ? (payload.value ?? payload.brightness ?? 100) : 100;
+      return await setTabBrightness(activeTab ? activeTab.id : null, val, true);
+    }
+
+    case 'set_dimmer_opacity':
+    case 'set_dimmer': {
+      const opacityVal = payload ? (payload.opacity ?? payload.value ?? 0) : 0;
+      return await setTabBrightness(activeTab ? activeTab.id : null, opacityVal, false);
+    }
+
     // Media & Volume actions
     case 'set_volume':
     case 'toggle_mute':
+    case 'toggle_master_mute':
     case 'media_play_pause':
     case 'play_pause':
     case 'media_play':

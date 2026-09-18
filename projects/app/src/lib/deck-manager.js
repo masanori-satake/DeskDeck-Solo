@@ -5,6 +5,7 @@
  * 3. Reader Deck
  * 4. Audio Deck
  * 5. Standard Deck
+ * Copyright (c) 2026 Masanori SATAKE
  */
 
 export const DECK_PRESETS = {
@@ -182,9 +183,9 @@ export const DECK_PRESETS = {
         id: 'brightness_fader',
         type: 'fader',
         label: 'Brightness',
-        min: 10,
+        min: 20,
         max: 100,
-        defaultValue: 85,
+        defaultValue: 100,
         step: 1,
         unit: '%',
         action: 'set_brightness'
@@ -318,6 +319,21 @@ export const DECK_PRESETS = {
           { id: 'prev', label: 'Prev', icon: '◀' },
           { id: 'next', label: 'Next', icon: '▶' }
         ]
+      },
+      {
+        id: 'keep_awake',
+        type: 'switch',
+        label: 'Keep Awake',
+        defaultValue: false,
+        action: 'toggle_keep_awake'
+      },
+      {
+        id: 'mute_bg_tabs',
+        type: 'button',
+        label: 'Mute BG Tabs',
+        icon: '🔇',
+        variant: 'secondary',
+        action: 'mute_background_tabs'
       },
       {
         id: 'bookmark_page',
