@@ -35,8 +35,27 @@ async function handleDeckAction(message) {
     case 'set_volume':
     case 'toggle_mute':
     case 'media_play_pause':
+    case 'play_pause':
+    case 'media_play':
+    case 'play':
+    case 'media_pause':
+    case 'pause':
     case 'media_prev':
+    case 'prev_track':
     case 'media_next':
+    case 'next_track':
+    case 'seek':
+    case 'seek_relative':
+    case 'media_seek':
+    case 'seek_dial':
+    case 'set_speed':
+    case 'set_playback_rate':
+    case 'playback_rate':
+    case 'toggle_pip':
+    case 'pip':
+    case 'toggle_picture_in_picture':
+    case 'pad_action':
+    case 'set_fader':
     case 'toggle_fullscreen':
       if (activeTab && activeTab.id) {
         return await sendToTab(activeTab.id, { action, payload });
@@ -106,7 +125,9 @@ async function handleDeckAction(message) {
       break;
 
     default:
-      console.log('Unhandled action:', action, payload);
+      if (activeTab && activeTab.id) {
+        return await sendToTab(activeTab.id, { action, payload });
+      }
   }
 }
 

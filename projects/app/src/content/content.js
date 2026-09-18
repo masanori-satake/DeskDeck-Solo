@@ -1,6 +1,6 @@
 /**
  * Content script for DeskDeck-Solo
- * Executes page-level deck controls (media playback, scrolling, page zoom/theme)
+ * Executes page-level deck controls (media playback, video controls, scrolling, page zoom/theme)
  */
 
 let darkOverlayHost = null;
@@ -10,9 +10,35 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   const { action, payload } = message;
 
+  // Delegate to YouTube-specific handler if on YouTube
+  if (
+    window.DeskDeckYouTube &&
+    window.DeskDeckYouTube.isYouTube &&
+    window.DeskDeckYouTube.isYouTube()
+  ) {
+    const handledByYT = window.DeskDeckYouTube.handleAction(action, payload);
+    if (handledByYT) {
+      sendResponse({ handled: true, source: 'youtube' });
+      return true;
+    }
+  }
+
   switch (action) {
     case 'media_play_pause':
+    case 'play_pause':
       toggleMediaPlayback();
+      sendResponse({ handled: true });
+      break;
+
+    case 'media_play':
+    case 'play':
+      playMedia();
+      sendResponse({ handled: true });
+      break;
+
+    case 'media_pause':
+    case 'pause':
+      pauseMedia();
       sendResponse({ handled: true });
       break;
 
@@ -27,14 +53,78 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
 
     case 'media_next':
-      skipMediaTrack(1);
+    case 'next_track':
+      skipMediaTrack(10);
       sendResponse({ handled: true });
       break;
 
     case 'media_prev':
-      skipMediaTrack(-1);
+    case 'prev_track':
+      skipMediaTrack(-10);
       sendResponse({ handled: true });
       break;
+
+    case 'seek':
+    case 'seek_relative':
+    case 'media_seek': {
+      const delta = payload ? (payload.seconds ?? payload.value ?? payload.delta ?? 0) : 0;
+      const isRelative = payload ? payload.absolute === undefined && payload.isRelative !== false : true;
+      seekVideo(delta, isRelative);
+      sendResponse({ handled: true });
+      break;
+    }
+
+    case 'seek_dial':
+    case 'scroll_dial': {
+      // Relative seek from jog dial rotation
+      if (payload && payload.value !== undefined) {
+        const deltaSeconds = (payload.value - 50) * 0.2;
+        if (deltaSeconds !== 0) {
+          seekVideo(deltaSeconds, true);
+        }
+      } else {
+        // Fallback for general page scroll dial
+        const delta = ((payload ? payload.value : 50) - 50) * 10;
+        window.scrollBy({ top: delta, behavior: 'smooth' });
+      }
+      sendResponse({ handled: true });
+      break;
+    }
+
+    case 'set_speed':
+    case 'set_playback_rate':
+    case 'playback_rate': {
+      const rate = payload ? (payload.value ?? payload.rate ?? payload.speed ?? 1.0) : 1.0;
+      setVideoSpeed(rate);
+      sendResponse({ handled: true });
+      break;
+    }
+
+    case 'toggle_pip':
+    case 'pip':
+    case 'toggle_picture_in_picture':
+      togglePictureInPicture();
+      sendResponse({ handled: true });
+      break;
+
+    case 'pad_action': {
+      const padId = payload ? payload.padId : null;
+      if (padId === 'play') playMedia();
+      else if (padId === 'pause') pauseMedia();
+      else if (padId === 'prev') skipMediaTrack(-10);
+      else if (padId === 'next') skipMediaTrack(10);
+      else toggleMediaPlayback();
+      sendResponse({ handled: true });
+      break;
+    }
+
+    case 'set_fader': {
+      // Playback fader maps to video volume
+      const val = payload ? payload.value : 80;
+      setPageMediaVolume(val);
+      sendResponse({ handled: true });
+      break;
+    }
 
     case 'toggle_fullscreen':
       if (!document.fullscreenElement) {
@@ -60,12 +150,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ handled: true });
       break;
 
-    case 'scroll_dial':
-      const delta = ((payload ? payload.value : 50) - 50) * 10;
-      window.scrollBy({ top: delta, behavior: 'smooth' });
-      sendResponse({ handled: true });
-      break;
-
     case 'toggle_dark_reader':
       toggleDarkReaderOverlay();
       sendResponse({ handled: true });
@@ -86,7 +170,46 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return true;
 });
 
+/**
+ * Automatically detect primary video element on the page.
+ * Returns playing video first, or largest visible video element.
+ * @returns {HTMLVideoElement|null}
+ */
+function getPrimaryVideoElement() {
+  const videos = Array.from(document.querySelectorAll('video'));
+  if (videos.length === 0) return null;
+
+  // 1. Look for currently playing video
+  const playing = videos.find((v) => !v.paused && !v.ended && v.readyState > 2);
+  if (playing) return playing;
+
+  // 2. Look for largest visible video by bounding client rect area
+  let bestVideo = videos[0];
+  let maxArea = 0;
+
+  videos.forEach((v) => {
+    const rect = v.getBoundingClientRect();
+    const area = rect.width * rect.height;
+    if (area > maxArea) {
+      maxArea = area;
+      bestVideo = v;
+    }
+  });
+
+  return bestVideo;
+}
+
 function toggleMediaPlayback() {
+  const primaryVideo = getPrimaryVideoElement();
+  if (primaryVideo) {
+    if (primaryVideo.paused) {
+      primaryVideo.play().catch(() => {});
+    } else {
+      primaryVideo.pause();
+    }
+    return;
+  }
+
   const mediaElements = document.querySelectorAll('video, audio');
   if (mediaElements.length > 0) {
     let hasPlaying = false;
@@ -104,23 +227,31 @@ function toggleMediaPlayback() {
   }
 }
 
+function playMedia() {
+  const primaryVideo = getPrimaryVideoElement();
+  if (primaryVideo) {
+    primaryVideo.play().catch(() => {});
+    return;
+  }
+  const mediaElements = document.querySelectorAll('video, audio');
+  mediaElements.forEach((m) => m.play().catch(() => {}));
+}
+
+function pauseMedia() {
+  const primaryVideo = getPrimaryVideoElement();
+  if (primaryVideo) {
+    primaryVideo.pause();
+    return;
+  }
+  const mediaElements = document.querySelectorAll('video, audio');
+  mediaElements.forEach((m) => m.pause());
+}
+
 function setPageMediaVolume(valPercent) {
   const mediaElements = document.querySelectorAll('video, audio');
   const volume = Math.max(0, Math.min(1, valPercent / 100));
   mediaElements.forEach((m) => {
     m.volume = volume;
-  });
-}
-
-function setMicLevel(valPercent) {
-  // If web meeting media stream input elements exist or page audio context exists
-  const volume = Math.max(0, Math.min(1, valPercent / 100));
-  const audioTracks = [];
-  if (window.stream && window.stream.getAudioTracks) {
-    window.stream.getAudioTracks().forEach((track) => audioTracks.push(track));
-  }
-  audioTracks.forEach((track) => {
-    track.enabled = volume > 0;
   });
 }
 
@@ -131,12 +262,67 @@ function togglePageMediaMute() {
   });
 }
 
-function skipMediaTrack(direction) {
+function skipMediaTrack(seconds) {
+  seekVideo(seconds, true);
+}
+
+function seekVideo(seconds, isRelative = true) {
+  const video = getPrimaryVideoElement();
+  if (video) {
+    let targetTime = isRelative ? video.currentTime + seconds : seconds;
+    if (!isNaN(video.duration) && video.duration > 0) {
+      targetTime = Math.max(0, Math.min(video.duration, targetTime));
+    } else {
+      targetTime = Math.max(0, targetTime);
+    }
+    video.currentTime = targetTime;
+  } else {
+    const mediaElements = document.querySelectorAll('audio');
+    mediaElements.forEach((m) => {
+      if (!isNaN(m.duration)) {
+        const target = isRelative ? m.currentTime + seconds : seconds;
+        m.currentTime = Math.max(0, Math.min(m.duration, target));
+      }
+    });
+  }
+}
+
+function setVideoSpeed(rate) {
+  const clampedRate = Math.max(0.25, Math.min(3.0, Number(rate) || 1.0));
   const mediaElements = document.querySelectorAll('video, audio');
   mediaElements.forEach((m) => {
-    if (!isNaN(m.duration)) {
-      m.currentTime = Math.max(0, Math.min(m.duration, m.currentTime + direction * 10));
+    m.playbackRate = clampedRate;
+  });
+}
+
+async function togglePictureInPicture() {
+  if (document.pictureInPictureElement) {
+    try {
+      await document.exitPictureInPicture();
+    } catch (err) {
+      console.warn('Exit PiP failed:', err);
     }
+    return;
+  }
+
+  const video = getPrimaryVideoElement();
+  if (video && document.pictureInPictureEnabled) {
+    try {
+      await video.requestPictureInPicture();
+    } catch (err) {
+      console.warn('Request PiP failed:', err);
+    }
+  }
+}
+
+function setMicLevel(valPercent) {
+  const volume = Math.max(0, Math.min(1, valPercent / 100));
+  const audioTracks = [];
+  if (window.stream && window.stream.getAudioTracks) {
+    window.stream.getAudioTracks().forEach((track) => audioTracks.push(track));
+  }
+  audioTracks.forEach((track) => {
+    track.enabled = volume > 0;
   });
 }
 
@@ -168,7 +354,6 @@ function toggleDarkReaderOverlay() {
 }
 
 function attemptWebMeetingAction(action) {
-  // Generic selector fallback for Google Meet / Zoom / Teams web buttons
   const selectors = {
     toggle_mic_mute: ['[aria-label*="mute"]', '[aria-label*="マイク"]', 'button[data-is-muted]'],
     toggle_camera: ['[aria-label*="camera"]', '[aria-label*="カメラ"]'],
