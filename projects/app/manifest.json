@@ -25,6 +25,7 @@
         "<all_urls>"
       ],
       "js": [
+        "src/content/youtube.js",
         "src/content/content.js"
       ]
     }

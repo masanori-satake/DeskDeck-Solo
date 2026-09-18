@@ -26,6 +26,17 @@ export const DECK_PRESETS = {
         action: 'set_volume'
       },
       {
+        id: 'media_speed',
+        type: 'knob',
+        label: 'Playback Speed',
+        min: 0.25,
+        max: 3.0,
+        defaultValue: 1.0,
+        step: 0.25,
+        unit: 'x',
+        action: 'set_speed'
+      },
+      {
         id: 'media_fader',
         type: 'fader',
         label: 'Playback Fader',
@@ -35,6 +46,17 @@ export const DECK_PRESETS = {
         step: 1,
         unit: '%',
         action: 'set_fader'
+      },
+      {
+        id: 'jog_seek',
+        type: 'knob',
+        label: 'Jog Dial Seek',
+        min: 0,
+        max: 100,
+        defaultValue: 50,
+        step: 1,
+        unit: '',
+        action: 'seek_dial'
       },
       {
         id: 'media_pad',
@@ -55,6 +77,14 @@ export const DECK_PRESETS = {
         label: 'Soft Mute',
         defaultValue: false,
         action: 'toggle_mute'
+      },
+      {
+        id: 'media_pip',
+        type: 'button',
+        label: 'Picture-in-Picture',
+        icon: '🖼️',
+        variant: 'secondary',
+        action: 'toggle_pip'
       },
       {
         id: 'media_fullscreen',
