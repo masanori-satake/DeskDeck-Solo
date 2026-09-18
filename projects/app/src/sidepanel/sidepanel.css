@@ -268,12 +268,21 @@ body, html {
 .fader-track-wrapper {
   position: relative;
   width: 40px;
-  height: 180px;
+  height: 160px;
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
   touch-action: none;
+}
+
+.knob-dial:focus-visible,
+.fader-track-wrapper:focus-visible,
+.flip-switch-cover:focus-visible,
+.flip-switch-base:focus-visible,
+.multipad-button:focus-visible {
+  outline: 3px solid var(--primary-light);
+  outline-offset: 3px;
 }
 
 .fader-slot-line {

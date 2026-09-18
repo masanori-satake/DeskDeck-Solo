@@ -186,6 +186,11 @@ function renderKnobWidget(cardContainer, slot) {
 
   const dial = document.createElement('div');
   dial.className = 'knob-dial';
+  dial.setAttribute('role', 'slider');
+  dial.setAttribute('tabindex', '0');
+  dial.setAttribute('aria-label', slot.label);
+  dial.setAttribute('aria-valuemin', String(slot.min));
+  dial.setAttribute('aria-valuemax', String(slot.max));
 
   const cap = document.createElement('div');
   cap.className = 'knob-cap';
@@ -212,6 +217,7 @@ function renderKnobWidget(cardContainer, slot) {
     const angle = -135 + norm * 270;
     pointer.style.transform = `rotate(${angle}deg)`;
     valueDisplay.textContent = `${value}${slot.unit || ''}`;
+    dial.setAttribute('aria-valuenow', String(value));
 
     // Highlight SVG ticks up to current value
     const lines = svg.querySelectorAll('line');
@@ -226,6 +232,19 @@ function renderKnobWidget(cardContainer, slot) {
   };
 
   updateKnobUI(val);
+
+  const applyKnobValue = (newVal) => {
+    if (newVal === val) return;
+
+    val = newVal;
+    currentSlotStates[slot.id] = val;
+    updateKnobUI(val);
+    saveDeckSlotStates(activeDeckId, currentSlotStates);
+    dispatchDeckAction(slot.action, { value: val });
+
+    if (appSettings.soundEffects) playKnobTickSound();
+    if (appSettings.hapticFeedback) triggerHaptic(8);
+  };
 
   // Circular Pointer Movement (Polar Coordinates / Math.atan2)
   let isDragging = false;
@@ -272,16 +291,7 @@ function renderKnobWidget(cardContainer, slot) {
     const step = slot.step || 1;
     const newVal = Math.round(unroundedVal / step) * step;
 
-    if (newVal !== val) {
-      val = newVal;
-      currentSlotStates[slot.id] = val;
-      updateKnobUI(val);
-      saveDeckSlotStates(activeDeckId, currentSlotStates);
-      dispatchDeckAction(slot.action, { value: val });
-
-      if (appSettings.soundEffects) playKnobTickSound();
-      if (appSettings.hapticFeedback) triggerHaptic(8);
-    }
+    applyKnobValue(newVal);
   };
 
   const onPointerUp = (e) => {
@@ -300,6 +310,18 @@ function renderKnobWidget(cardContainer, slot) {
   dial.addEventListener('pointermove', onPointerMove);
   dial.addEventListener('pointerup', onPointerUp);
   dial.addEventListener('pointercancel', onPointerUp);
+  dial.addEventListener('keydown', (e) => {
+    const direction = (e.key === 'ArrowUp' || e.key === 'ArrowRight')
+      ? 1
+      : (e.key === 'ArrowDown' || e.key === 'ArrowLeft') ? -1 : 0;
+    if (!direction) return;
+
+    e.preventDefault();
+    const step = slot.step || 1;
+    const newVal = Math.max(slot.min, Math.min(slot.max, val + direction * step));
+    unroundedVal = newVal;
+    applyKnobValue(newVal);
+  });
 }
 
 /**
@@ -314,6 +336,12 @@ function renderFaderWidget(cardContainer, slot) {
 
   const trackWrapper = document.createElement('div');
   trackWrapper.className = 'fader-track-wrapper';
+  trackWrapper.setAttribute('role', 'slider');
+  trackWrapper.setAttribute('tabindex', '0');
+  trackWrapper.setAttribute('aria-label', slot.label);
+  trackWrapper.setAttribute('aria-valuemin', String(slot.min));
+  trackWrapper.setAttribute('aria-valuemax', String(slot.max));
+  trackWrapper.setAttribute('aria-orientation', 'vertical');
 
   const slotLine = document.createElement('div');
   slotLine.className = 'fader-slot-line';
@@ -372,9 +400,23 @@ function renderFaderWidget(cardContainer, slot) {
     fillBar.style.height = `${capPercent}%`;
 
     valueDisplay.textContent = `${value}${slot.unit || ''}`;
+    trackWrapper.setAttribute('aria-valuenow', String(value));
   };
 
   updateFaderUI(val);
+
+  const applyFaderValue = (newVal) => {
+    if (newVal === val) return;
+
+    val = newVal;
+    currentSlotStates[slot.id] = val;
+    updateFaderUI(val);
+    saveDeckSlotStates(activeDeckId, currentSlotStates);
+    dispatchDeckAction(slot.action, { value: val });
+
+    if (appSettings.soundEffects) playKnobTickSound();
+    if (appSettings.hapticFeedback) triggerHaptic(8);
+  };
 
   let isDragging = false;
 
@@ -391,16 +433,7 @@ function renderFaderWidget(cardContainer, slot) {
     let newVal = Math.round((slot.min + norm * range) / step) * step;
     newVal = Math.max(slot.min, Math.min(slot.max, newVal));
 
-    if (newVal !== val) {
-      val = newVal;
-      currentSlotStates[slot.id] = val;
-      updateFaderUI(val);
-      saveDeckSlotStates(activeDeckId, currentSlotStates);
-      dispatchDeckAction(slot.action, { value: val });
-
-      if (appSettings.soundEffects) playKnobTickSound();
-      if (appSettings.hapticFeedback) triggerHaptic(8);
-    }
+    applyFaderValue(newVal);
   };
 
   const onPointerDown = (e) => {
@@ -435,6 +468,17 @@ function renderFaderWidget(cardContainer, slot) {
   trackWrapper.addEventListener('pointermove', onPointerMove);
   trackWrapper.addEventListener('pointerup', onPointerUp);
   trackWrapper.addEventListener('pointercancel', onPointerUp);
+  trackWrapper.addEventListener('keydown', (e) => {
+    const direction = (e.key === 'ArrowUp' || e.key === 'ArrowRight')
+      ? 1
+      : (e.key === 'ArrowDown' || e.key === 'ArrowLeft') ? -1 : 0;
+    if (!direction) return;
+
+    e.preventDefault();
+    const step = slot.step || 1;
+    const newVal = Math.max(slot.min, Math.min(slot.max, val + direction * step));
+    applyFaderValue(newVal);
+  });
 }
 
 /**
@@ -450,6 +494,10 @@ function renderFlipSwitchWidget(cardContainer, slot) {
   // Hinged semi-transparent protective cover
   const cover = document.createElement('div');
   cover.className = 'flip-switch-cover';
+  cover.setAttribute('role', 'button');
+  cover.setAttribute('tabindex', '0');
+  cover.setAttribute('aria-label', `${slot.label} cover`);
+  cover.setAttribute('aria-expanded', 'false');
 
   const coverLabel = document.createElement('span');
   coverLabel.className = 'flip-switch-cover-label';
@@ -459,8 +507,12 @@ function renderFlipSwitchWidget(cardContainer, slot) {
   // Switch base & lever inside
   const base = document.createElement('div');
   base.className = 'flip-switch-base';
+  base.setAttribute('role', 'switch');
+  base.setAttribute('tabindex', '0');
+  base.setAttribute('aria-label', slot.label);
 
   const isSwitchedOn = !!currentSlotStates[slot.id];
+  base.setAttribute('aria-checked', String(isSwitchedOn));
   const lever = document.createElement('div');
   lever.className = `flip-switch-lever ${isSwitchedOn ? 'active' : ''}`;
 
@@ -484,9 +536,21 @@ function renderFlipSwitchWidget(cardContainer, slot) {
   let isCoverOpen = false;
   let dragStartY = 0;
   let isCoverDragging = false;
+  let didCoverDrag = false;
+
+  const setCoverOpen = (open) => {
+    if (open === isCoverOpen) return;
+
+    isCoverOpen = open;
+    housing.classList.toggle('cover-open', isCoverOpen);
+    cover.setAttribute('aria-expanded', String(isCoverOpen));
+    if (appSettings.soundEffects) playSwitchSound(isCoverOpen);
+    if (appSettings.hapticFeedback) triggerHaptic(isCoverOpen ? 12 : 8);
+  };
 
   const onCoverPointerDown = (e) => {
     isCoverDragging = true;
+    didCoverDrag = false;
     dragStartY = e.clientY;
     try {
       cover.setPointerCapture(e.pointerId);
@@ -500,15 +564,11 @@ function renderFlipSwitchWidget(cardContainer, slot) {
     const deltaY = e.clientY - dragStartY;
 
     if (deltaY < -15 && !isCoverOpen) {
-      isCoverOpen = true;
-      housing.classList.add('cover-open');
-      if (appSettings.soundEffects) playSwitchSound(true);
-      if (appSettings.hapticFeedback) triggerHaptic(12);
+      didCoverDrag = true;
+      setCoverOpen(true);
     } else if (deltaY > 15 && isCoverOpen) {
-      isCoverOpen = false;
-      housing.classList.remove('cover-open');
-      if (appSettings.soundEffects) playSwitchSound(false);
-      if (appSettings.hapticFeedback) triggerHaptic(8);
+      didCoverDrag = true;
+      setCoverOpen(false);
     }
   };
 
@@ -528,15 +588,18 @@ function renderFlipSwitchWidget(cardContainer, slot) {
   cover.addEventListener('pointerup', onCoverPointerUp);
   cover.addEventListener('pointercancel', onCoverPointerUp);
 
-  cover.addEventListener('click', (e) => {
-    if (!isCoverOpen) {
-      cover.classList.add('swipe-hint');
-      setTimeout(() => cover.classList.remove('swipe-hint'), 400);
-      if (appSettings.soundEffects) playKnobTickSound();
-    }
+  cover.addEventListener('click', () => {
+    if (didCoverDrag) return;
+    setCoverOpen(!isCoverOpen);
   });
 
-  base.addEventListener('click', () => {
+  cover.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    setCoverOpen(!isCoverOpen);
+  });
+
+  const toggleBase = () => {
     if (!isCoverOpen) {
       cover.classList.add('swipe-hint');
       setTimeout(() => cover.classList.remove('swipe-hint'), 400);
@@ -555,12 +618,20 @@ function renderFlipSwitchWidget(cardContainer, slot) {
       statusLed.classList.remove('active');
       statusText.textContent = 'OFF';
     }
+    base.setAttribute('aria-checked', String(newState));
 
     saveDeckSlotStates(activeDeckId, currentSlotStates);
     dispatchDeckAction(slot.action, { enabled: newState });
 
     if (appSettings.soundEffects) playSwitchSound(newState);
     if (appSettings.hapticFeedback) triggerHaptic(20);
+  };
+
+  base.addEventListener('click', toggleBase);
+  base.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    toggleBase();
   });
 }
 
@@ -575,7 +646,8 @@ function renderMultiPadWidget(cardContainer, slot) {
   const padGrid = document.createElement('div');
   padGrid.className = `multipad-grid multipad-${cols}x${cols}`;
 
-  const padStates = currentSlotStates[slot.id] || {};
+  const padStates = { ...(currentSlotStates[slot.id] || {}) };
+  currentSlotStates[slot.id] = padStates;
 
   for (let i = 0; i < gridCount; i++) {
     const padDef = (slot.pads && slot.pads[i]) || {
@@ -588,6 +660,8 @@ function renderMultiPadWidget(cardContainer, slot) {
     padBtn.className = 'multipad-button';
     padBtn.setAttribute('type', 'button');
     padBtn.setAttribute('data-pad-id', padDef.id);
+    padBtn.setAttribute('aria-label', padDef.label);
+    padBtn.setAttribute('aria-pressed', String(!!padStates[padDef.id]));
 
     if (padStates[padDef.id]) {
       padBtn.classList.add('active');
@@ -626,6 +700,7 @@ function renderMultiPadWidget(cardContainer, slot) {
       } else {
         padBtn.classList.remove('active');
       }
+      padBtn.setAttribute('aria-pressed', String(activeState));
 
       saveDeckSlotStates(activeDeckId, currentSlotStates);
       dispatchDeckAction(slot.action, { padId: padDef.id, index: i, active: activeState });
