@@ -1,9 +1,11 @@
 /**
  * Content script for DeskDeck-Solo
- * Executes page-level deck controls (media playback, video controls, scrolling, page zoom/theme)
+ * Executes page-level deck controls (media playback, video controls, scrolling, page zoom/theme, brightness dimmer overlay)
  */
 
 let darkOverlayHost = null;
+let dimmerHost = null;
+let dimmerOverlay = null;
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || !message.action) return;
@@ -149,6 +151,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       window.scrollBy({ top: window.innerHeight * 0.8, behavior: 'smooth' });
       sendResponse({ handled: true });
       break;
+
+    case 'set_brightness': {
+      const brightnessVal = payload ? (payload.value ?? payload.brightness ?? 100) : 100;
+      // Convert brightness % (10 - 100) to dark overlay opacity (0.0 - 0.8)
+      const opacityVal = (100 - Math.max(20, Math.min(100, Number(brightnessVal)))) / 100;
+      const appliedOpacity = setDimmerOpacity(opacityVal);
+      sendResponse({ handled: true, opacity: appliedOpacity });
+      break;
+    }
+
+    case 'set_dimmer_opacity':
+    case 'set_dimmer': {
+      const opacityVal = payload ? (payload.opacity ?? payload.value ?? 0) : 0;
+      const appliedOpacity = setDimmerOpacity(opacityVal);
+      sendResponse({ handled: true, opacity: appliedOpacity });
+      break;
+    }
 
     case 'toggle_dark_reader':
       toggleDarkReaderOverlay();
@@ -324,6 +343,55 @@ function setMicLevel(valPercent) {
   audioTracks.forEach((track) => {
     track.enabled = volume > 0;
   });
+}
+
+/**
+ * Set pseudo brightness overlay opacity (0.0 to 0.8 / 0% to 80%)
+ * Injects top-layer black overlay with pointer-events: none.
+ * @param {number} opacityVal - Desired overlay opacity (0.0 to 0.8)
+ * @returns {number} Clamped applied opacity
+ */
+function setDimmerOpacity(opacityVal) {
+  let opacity = Number(opacityVal);
+  if (isNaN(opacity)) opacity = 0;
+  if (opacity > 1.0) opacity = opacity / 100;
+
+  // Clamp opacity strictly between 0% (0.0) and 80% (0.8)
+  opacity = Math.max(0.0, Math.min(0.8, opacity));
+
+  if (opacity <= 0.001) {
+    if (dimmerHost) {
+      dimmerHost.remove();
+      dimmerHost = null;
+      dimmerOverlay = null;
+    }
+    return 0;
+  }
+
+  if (!dimmerHost || !document.contains(dimmerHost)) {
+    dimmerHost = document.createElement('div');
+    dimmerHost.id = 'deskdeck-dimmer-host';
+    dimmerHost.style.cssText = 'all: initial;';
+
+    const shadowRoot = dimmerHost.attachShadow({ mode: 'open' });
+    dimmerOverlay = document.createElement('div');
+    dimmerOverlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #000000;
+      pointer-events: none;
+      z-index: 2147483647;
+      transition: opacity 0.15s ease;
+    `;
+    shadowRoot.appendChild(dimmerOverlay);
+    (document.body || document.documentElement).appendChild(dimmerHost);
+  }
+
+  dimmerOverlay.style.opacity = opacity.toFixed(3);
+  return opacity;
 }
 
 function toggleDarkReaderOverlay() {
