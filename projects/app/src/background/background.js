@@ -18,7 +18,13 @@ chrome.runtime.onInstalled.addListener(() => {
   }
 });
 
-// Message listener for deck actions
+/**
+ * Route incoming deck actions and return their asynchronous results.
+ * @param {Object} message - Deck action and optional payload.
+ * @param {chrome.runtime.MessageSender} sender - Message sender metadata.
+ * @param {Function} sendResponse - Callback used to return the action result.
+ * @returns {boolean} Whether the response channel should remain open.
+ */
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || !message.action) return false;
 

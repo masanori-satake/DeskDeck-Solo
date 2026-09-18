@@ -7,6 +7,13 @@ let darkOverlayHost = null;
 let dimmerHost = null;
 let dimmerOverlay = null;
 
+/**
+ * Apply deck actions to the current page and report whether they were handled.
+ * @param {Object} message - Deck action and optional payload.
+ * @param {chrome.runtime.MessageSender} sender - Message sender metadata.
+ * @param {Function} sendResponse - Callback used to return the handling result.
+ * @returns {boolean|undefined} Whether the response channel should remain open.
+ */
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || !message.action) return;
 
