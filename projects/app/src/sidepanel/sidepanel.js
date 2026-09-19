@@ -621,7 +621,7 @@ function renderFlipSwitchWidget(cardContainer, slot) {
     base.setAttribute('aria-checked', String(newState));
 
     saveDeckSlotStates(activeDeckId, currentSlotStates);
-    dispatchDeckAction(slot.action, { enabled: newState });
+    dispatchDeckAction(slot.action, { enabled: newState, protectedCover: true, fromFlipSwitch: true });
 
     if (appSettings.soundEffects) playSwitchSound(newState);
     if (appSettings.hapticFeedback) triggerHaptic(20);
