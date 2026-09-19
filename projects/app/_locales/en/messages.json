@@ -39,70 +39,6 @@
     "message": "DeskDeck-Solo Settings",
     "description": "Options page title"
   },
-  "generalSettingsTitle": {
-    "message": "General Feedback Settings",
-    "description": "General settings section title"
-  },
-  "slotMappingTitle": {
-    "message": "Preset Slot Parameter Assignments",
-    "description": "Slot mapping section title"
-  },
-  "slotMappingDesc": {
-    "message": "Customize action parameter assignments for each hardware slot on preset decks.",
-    "description": "Slot mapping section description"
-  },
-  "selectDeckToEdit": {
-    "message": "Select Deck to Edit:",
-    "description": "Deck select label"
-  },
-  "urlMappingTitle": {
-    "message": "URL Auto-Switch Rules",
-    "description": "URL mapping section title"
-  },
-  "urlMappingDesc": {
-    "message": "Automatically switch active deck when matching website domain is active in Chrome tabs.",
-    "description": "URL mapping section description"
-  },
-  "thUrlPattern": {
-    "message": "Domain / URL Pattern",
-    "description": "Table header: URL pattern"
-  },
-  "thTargetDeck": {
-    "message": "Target Deck",
-    "description": "Table header: Target deck"
-  },
-  "thEnable": {
-    "message": "Enabled",
-    "description": "Table header: Enabled"
-  },
-  "thAction": {
-    "message": "Action",
-    "description": "Table header: Action"
-  },
-  "patternPlaceholder": {
-    "message": "e.g. youtube.com, meet.google.com",
-    "description": "Placeholder"
-  },
-  "addRule": {
-    "message": "Add Rule",
-    "description": "Add rule button"
-  },
-  "backupTitle": {
-    "message": "Backup & Restore Settings",
-    "description": "Backup section title"
-  },
-  "backupDesc": {
-    "message": "Export all configurations as JSON file or restore from a previously exported JSON backup.",
-    "description": "Backup section description"
-  },
-  "exportJson": {
-    "message": "📥 Export Settings (JSON)",
-    "description": "Export button"
-  },
-  "importJson": {
-    "message": "📤 Import Settings (JSON)",
-    "description": "Import button"
-  },
   "soundEffects": {
     "message": "Sound Feedback",
     "description": "Options item: Sound feedback"
@@ -112,7 +48,7 @@
     "description": "Options item: Touch feedback"
   },
   "save": {
-    "message": "Save All Settings",
+    "message": "Save",
     "description": "Save button"
   },
   "saved": {

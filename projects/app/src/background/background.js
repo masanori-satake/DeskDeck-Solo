@@ -10,22 +10,14 @@ import {
   setTabBrightness
 } from '../lib/system.js';
 
-import {
-  getActiveDeckId,
-  setActiveDeckId,
-  getUrlMappings
-} from '../lib/storage.js';
-
 // Enable side panel to open on extension icon click
-if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onInstalled) {
-  chrome.runtime.onInstalled.addListener(() => {
-    if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
-      chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((err) => {
-        console.warn('Side panel behavior set error:', err);
-      });
-    }
-  });
-}
+chrome.runtime.onInstalled.addListener(() => {
+  if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
+    chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((err) => {
+      console.warn('Side panel behavior set error:', err);
+    });
+  }
+});
 
 // Restore keep awake state if persisted across Service Worker restarts
 getKeepAwakeStatus().then((isActive) => {
@@ -38,154 +30,22 @@ getKeepAwakeStatus().then((isActive) => {
   }
 });
 
-/**
- * Match URL string against domain patterns/rules
- * @param {string} urlStr
- * @param {Array<{id: string, pattern: string, deckId: string, enabled: boolean}>} mappings
- * @returns {string|null} Matched deckId or null
- */
-export function matchUrlToDeck(urlStr, mappings) {
-  if (!urlStr || !Array.isArray(mappings) || mappings.length === 0) return null;
-
-  let urlObj;
-  try {
-    urlObj = new URL(urlStr);
-  } catch {
-    return null;
-  }
-
-  // Domain mappings apply only to web pages, never browser/extension URLs.
-  if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
-    return null;
-  }
-  const hostname = urlObj.hostname.toLowerCase();
-
-  for (const rule of mappings) {
-    if (!rule || !rule.enabled || !rule.pattern || !rule.deckId) continue;
-
-    const pattern = rule.pattern.trim().toLowerCase();
-    if (!pattern) continue;
-
-    let patternHostname = '';
-    try {
-      // Full URLs are accepted for convenience, but only their hostname is a match rule.
-      if (/^[a-z][a-z\d+.-]*:\/\//i.test(pattern)) {
-        const patternUrl = new URL(pattern);
-        if (patternUrl.protocol !== 'http:' && patternUrl.protocol !== 'https:') continue;
-        patternHostname = patternUrl.hostname.toLowerCase();
-      } else {
-        if (/[/?#]/.test(pattern)) continue;
-        patternHostname = new URL(`http://${pattern.replace(/^\*\./, '')}`).hostname.toLowerCase();
-      }
-    } catch {
-      continue;
-    }
-
-    // Match the exact hostname or one of its subdomains, never the path/query string.
-    if (hostname === patternHostname || hostname.endsWith('.' + patternHostname)) {
-      return rule.deckId;
-    }
-  }
-
-  return null;
-}
-
-/**
- * Check active tab URL and switch active deck if matched
- */
-let latestTabCheckGeneration = 0;
-let tabCheckQueue = Promise.resolve();
-
-async function checkAndSwitchDeckForTab(tab, generation) {
-  if (!tab || !tab.url || !tab.active || generation !== latestTabCheckGeneration) return;
-
-  const mappings = await getUrlMappings();
-  if (generation !== latestTabCheckGeneration) return;
-
-  const currentActiveDeckId = await getActiveDeckId();
-  if (generation !== latestTabCheckGeneration) return;
-
-  // Re-read the active tab immediately before writing so stale URL/update work is discarded.
-  const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (
-    generation !== latestTabCheckGeneration ||
-    !activeTab ||
-    activeTab.id !== tab.id ||
-    activeTab.url !== tab.url
-  ) return;
-
-  const matchedDeckId = matchUrlToDeck(activeTab.url, mappings);
-  if (!matchedDeckId || matchedDeckId === currentActiveDeckId) return;
-
-  await setActiveDeckId(matchedDeckId);
-  // If a newer event arrived during the write, undo this stale result before processing it.
-  if (generation !== latestTabCheckGeneration) {
-    await setActiveDeckId(currentActiveDeckId);
-    return;
-  }
-
-  // Notify sidepanel / runtime of automatic deck switch
-  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-    chrome.runtime.sendMessage({
-      action: 'SWITCH_DECK',
-      deckId: matchedDeckId,
-      sourceUrl: activeTab.url
-    }).catch(() => {
-      // Absorbed if side panel is closed
-    });
-  }
-}
-
-function queueTabCheck(tab, generation) {
-  tabCheckQueue = tabCheckQueue
-    .catch(() => {})
-    .then(() => checkAndSwitchDeckForTab(tab, generation));
-  return tabCheckQueue;
-}
-
-// Listen for tab activation changes
-if (typeof chrome !== 'undefined' && chrome.tabs) {
-  chrome.tabs.onActivated.addListener(async (activeInfo) => {
-    const generation = ++latestTabCheckGeneration;
-    try {
-      const tab = await chrome.tabs.get(activeInfo.tabId);
-      await queueTabCheck(tab, generation);
-    } catch {
-      // ignore
-    }
-  });
-
-  // Listen for tab URL updates
-  chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-    if (tab.active && (changeInfo.status === 'complete' || changeInfo.url)) {
-      const generation = ++latestTabCheckGeneration;
-      await queueTabCheck(tab, generation);
-    }
-  });
-}
-
 // Message listener for deck actions
-if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (!message || !message.action) return false;
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (!message || !message.action) return false;
 
-    handleDeckAction(message)
-      .then((result) => sendResponse({ success: true, result }))
-      .catch((error) => sendResponse({ success: false, error: error.message }));
+  handleDeckAction(message)
+    .then((result) => sendResponse({ success: true, result }))
+    .catch((error) => sendResponse({ success: false, error: error.message }));
 
-    return true; // Keep channel open for async response
-  });
-}
+  return true; // Keep channel open for async response
+});
 
 /**
  * Handle incoming deck hardware actions
  */
 async function handleDeckAction(message) {
   const { action, payload } = message;
-
-  if (typeof chrome === 'undefined' || !chrome.tabs) {
-    return { success: true };
-  }
 
   const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
 

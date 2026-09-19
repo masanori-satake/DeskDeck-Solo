@@ -39,70 +39,6 @@
     "message": "DeskDeck-Solo 設定",
     "description": "設定画面のタイトル"
   },
-  "generalSettingsTitle": {
-    "message": "一般フィードバック設定",
-    "description": "一般設定セクションのタイトル"
-  },
-  "slotMappingTitle": {
-    "message": "プリセットスロット割り当て編集",
-    "description": "スロット割当設定セクションのタイトル"
-  },
-  "slotMappingDesc": {
-    "message": "プリセットデッキの各ハードウェアスロットに割り当てる機能パラメータを選択・カスタマイズできます。",
-    "description": "スロット割当設定の説明"
-  },
-  "selectDeckToEdit": {
-    "message": "編集するデッキを選択:",
-    "description": "編集デッキ選択のラベル"
-  },
-  "urlMappingTitle": {
-    "message": "URL自動切り替えルール",
-    "description": "URLマッピングセクションのタイトル"
-  },
-  "urlMappingDesc": {
-    "message": "アクティブなタブのドメインに応じて自動的に指定したプリセットデッキへ切り替えます。",
-    "description": "URLマッピングセクションの説明"
-  },
-  "thUrlPattern": {
-    "message": "ドメイン / URLパターン",
-    "description": "テーブルヘッダー: URLパターン"
-  },
-  "thTargetDeck": {
-    "message": "切り替え先デッキ",
-    "description": "テーブルヘッダー: 対象デッキ"
-  },
-  "thEnable": {
-    "message": "有効",
-    "description": "テーブルヘッダー: 有効化"
-  },
-  "thAction": {
-    "message": "操作",
-    "description": "テーブルヘッダー: 操作"
-  },
-  "patternPlaceholder": {
-    "message": "例: youtube.com, meet.google.com",
-    "description": "プレースホルダー"
-  },
-  "addRule": {
-    "message": "ルールを追加",
-    "description": "ルール追加ボタン"
-  },
-  "backupTitle": {
-    "message": "設定のバックアップと復元",
-    "description": "バックアップセクションのタイトル"
-  },
-  "backupDesc": {
-    "message": "設定データ（スロット割り当て、URLルール等）をJSONファイルとして書き出し、または復元できます。",
-    "description": "バックアップセクションの説明"
-  },
-  "exportJson": {
-    "message": "📥 設定のエクスポート (JSON)",
-    "description": "エクスポートボタン"
-  },
-  "importJson": {
-    "message": "📤 設定のインポート (JSON)",
-    "description": "インポートボタン"
-  },
   "soundEffects": {
     "message": "効果音フィードバック",
     "description": "設定項目: 効果音"
@@ -112,7 +48,7 @@
     "description": "設定項目: バイブレーション/フィードバック"
   },
   "save": {
-    "message": "すべての設定を保存",
+    "message": "保存",
     "description": "保存ボタン"
   },
   "saved": {
