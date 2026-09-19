@@ -43,3 +43,7 @@ DeskDeck-Solo は、プライバシーとローカルセキュリティを最優
 
 If you have any questions or concerns regarding privacy, please open an issue in the official project repository.
 プライバシーに関するご質問やご懸念がある場合は、本プロジェクトの公式リポジトリにて Issue を作成してください。
+
+---
+
+Copyright (c) 2026 Masanori SATAKE

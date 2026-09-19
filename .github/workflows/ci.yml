@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   validate:
@@ -19,18 +19,38 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Validate JavaScript Syntax
-        run: |
-          for file in $(find projects/app/src -name "*.js"); do
-            echo "Checking $file..."
-            node --check "$file"
-          done
+      - name: Install dependencies
+        run: npm ci || npm install
 
-      - name: Validate JSON Files
+      - name: Run ESLint
+        run: npx eslint .
+
+      - name: Run Prettier check
+        run: npx prettier --check .
+
+      - name: Run Unit Tests
+        run: npm test
+
+      - name: Validate Extension Manifest, Locales and Version Consistency
         run: |
           node -e '
             const fs = require("fs");
-            const files = ["projects/app/manifest.json", "projects/app/_locales/ja/messages.json", "projects/app/_locales/en/messages.json"];
-            files.forEach(f => JSON.parse(fs.readFileSync(f, "utf8")));
-            console.log("All JSON files are valid!");
+            const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+            const manifest = JSON.parse(fs.readFileSync("projects/app/manifest.json", "utf8"));
+            if (pkg.version !== manifest.version) {
+              console.error(`Version mismatch! package.json: ${pkg.version}, manifest.json: ${manifest.version}`);
+              process.exit(1);
+            }
+            if (pkg.version !== "0.1.0") {
+              console.error(`Version is not 0.1.0! package.json: ${pkg.version}`);
+              process.exit(1);
+            }
+            const localeFiles = [
+              "projects/app/_locales/ja/messages.json",
+              "projects/app/_locales/en/messages.json",
+              "projects/web/locales/ja.json",
+              "projects/web/locales/en.json"
+            ];
+            localeFiles.forEach(f => JSON.parse(fs.readFileSync(f, "utf8")));
+            console.log("All JSON files are valid and version is unified at 0.1.0!");
           '

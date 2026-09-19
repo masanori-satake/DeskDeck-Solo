@@ -73,7 +73,7 @@ function setupDOMMock(hostname = 'teams.microsoft.com') {
   }
 
   globalThis.window = {
-    location: { hostname }
+    location: { hostname },
   };
 
   globalThis.document = {
@@ -98,7 +98,7 @@ function setupDOMMock(hostname = 'teams.microsoft.com') {
     },
     createElement(tagName) {
       return new MockElement(tagName);
-    }
+    },
   };
 
   globalThis.MutationObserver = MockMutationObserver;
@@ -145,7 +145,7 @@ function setupDOMMock(hostname = 'teams.microsoft.com') {
     },
     onElementClick(el, cb) {
       listeners.set(el, cb);
-    }
+    },
   };
 }
 
@@ -164,8 +164,12 @@ test('Teams Content Script tests', async (t) => {
   });
 
   await t.test('Mic & Camera Toggles via DOM click', () => {
-    const micBtn = dom.registerElement('button[aria-label*="Mute"]', { 'aria-label': 'Mute microphone' });
-    const camBtn = dom.registerElement('button[aria-label*="Camera"]', { 'aria-label': 'Turn Camera off' });
+    const micBtn = dom.registerElement('button[aria-label*="Mute"]', {
+      'aria-label': 'Mute microphone',
+    });
+    const camBtn = dom.registerElement('button[aria-label*="Camera"]', {
+      'aria-label': 'Turn Camera off',
+    });
 
     assert.strictEqual(window.DeskDeckTeams.toggleMic(), true);
     assert.strictEqual(micBtn.clicked, true);
@@ -175,11 +179,16 @@ test('Teams Content Script tests', async (t) => {
   });
 
   await t.test('Reaction tray fallback & emoji sending', async () => {
-    const trayBtn = dom.registerElement('button[aria-label*="Reactions"]', { 'aria-label': 'Reactions menu' });
+    const trayBtn = dom.registerElement('button[aria-label*="Reactions"]', {
+      'aria-label': 'Reactions menu',
+    });
 
     // When tray is clicked, register applause reaction button dynamically
     dom.onElementClick(trayBtn, () => {
-      dom.registerElement('button[data-tid*="applause"]', { 'data-tid': 'applause-btn', 'aria-label': 'Clap' });
+      dom.registerElement('button[data-tid*="applause"]', {
+        'data-tid': 'applause-btn',
+        'aria-label': 'Clap',
+      });
     });
 
     const reactionSent = await window.DeskDeckTeams.sendReaction('applause');
@@ -187,7 +196,9 @@ test('Teams Content Script tests', async (t) => {
   });
 
   await t.test('Safe leave call protection', () => {
-    const leaveBtn = dom.registerElement('button[aria-label*="Leave"]', { 'aria-label': 'Leave meeting' });
+    const leaveBtn = dom.registerElement('button[aria-label*="Leave"]', {
+      'aria-label': 'Leave meeting',
+    });
 
     // 1. Without protective cover authorization -> MUST be blocked
     const unprotectedResult = window.DeskDeckTeams.leaveCall({});
@@ -195,7 +206,10 @@ test('Teams Content Script tests', async (t) => {
     assert.strictEqual(leaveBtn.clicked, false);
 
     // 2. With protective cover authorization -> MUST click leave button
-    const protectedResult = window.DeskDeckTeams.leaveCall({ protectedCover: true, fromFlipSwitch: true });
+    const protectedResult = window.DeskDeckTeams.leaveCall({
+      protectedCover: true,
+      fromFlipSwitch: true,
+    });
     assert.strictEqual(protectedResult, true);
     assert.strictEqual(leaveBtn.clicked, true);
   });
@@ -210,8 +224,12 @@ test('Meet Content Script tests', async (t) => {
   });
 
   await t.test('Mic & Camera Toggles via DOM click', () => {
-    const micBtn = dom.registerElement('button[aria-label*="turn off microphone"]', { 'aria-label': 'turn off microphone' });
-    const camBtn = dom.registerElement('button[aria-label*="turn off camera"]', { 'aria-label': 'turn off camera' });
+    const micBtn = dom.registerElement('button[aria-label*="turn off microphone"]', {
+      'aria-label': 'turn off microphone',
+    });
+    const camBtn = dom.registerElement('button[aria-label*="turn off camera"]', {
+      'aria-label': 'turn off camera',
+    });
 
     assert.strictEqual(window.DeskDeckMeet.toggleMic(), true);
     assert.strictEqual(micBtn.clicked, true);
@@ -221,10 +239,15 @@ test('Meet Content Script tests', async (t) => {
   });
 
   await t.test('Reaction tray fallback & emoji sending', async () => {
-    const trayBtn = dom.registerElement('button[aria-label*="Send a reaction"]', { 'aria-label': 'Send a reaction' });
+    const trayBtn = dom.registerElement('button[aria-label*="Send a reaction"]', {
+      'aria-label': 'Send a reaction',
+    });
 
     dom.onElementClick(trayBtn, () => {
-      dom.registerElement('button[data-emoji="👍"]', { 'data-emoji': '👍', 'aria-label': 'thumbs up' });
+      dom.registerElement('button[data-emoji="👍"]', {
+        'data-emoji': '👍',
+        'aria-label': 'thumbs up',
+      });
     });
 
     const reactionSent = await window.DeskDeckMeet.sendReaction('thumbsup');
@@ -232,7 +255,9 @@ test('Meet Content Script tests', async (t) => {
   });
 
   await t.test('Safe leave call protection', () => {
-    const leaveBtn = dom.registerElement('button[aria-label*="Leave call"]', { 'aria-label': 'Leave call' });
+    const leaveBtn = dom.registerElement('button[aria-label*="Leave call"]', {
+      'aria-label': 'Leave call',
+    });
 
     // 1. Without protective cover authorization -> MUST be blocked
     const unprotectedResult = window.DeskDeckMeet.leaveCall({});
@@ -240,7 +265,10 @@ test('Meet Content Script tests', async (t) => {
     assert.strictEqual(leaveBtn.clicked, false);
 
     // 2. With protective cover authorization -> MUST click leave button
-    const protectedResult = window.DeskDeckMeet.leaveCall({ protectedCover: true, fromFlipSwitch: true });
+    const protectedResult = window.DeskDeckMeet.leaveCall({
+      protectedCover: true,
+      fromFlipSwitch: true,
+    });
     assert.strictEqual(protectedResult, true);
     assert.strictEqual(leaveBtn.clicked, true);
   });

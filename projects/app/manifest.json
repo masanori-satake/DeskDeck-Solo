@@ -2,28 +2,17 @@
   "manifest_version": 3,
   "name": "__MSG_appName__",
   "description": "__MSG_appDesc__",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "default_locale": "ja",
-  "permissions": [
-    "sidePanel",
-    "storage",
-    "tabs",
-    "audio",
-    "power",
-    "bookmarks"
-  ],
-  "host_permissions": [
-    "<all_urls>"
-  ],
+  "permissions": ["sidePanel", "storage", "tabs", "audio", "power", "bookmarks"],
+  "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "src/background/background.js",
     "type": "module"
   },
   "content_scripts": [
     {
-      "matches": [
-        "<all_urls>"
-      ],
+      "matches": ["<all_urls>"],
       "js": [
         "src/content/teams.js",
         "src/content/meet.js",

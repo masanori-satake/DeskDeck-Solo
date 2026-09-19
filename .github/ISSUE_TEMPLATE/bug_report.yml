@@ -1,0 +1,42 @@
+name: 🐛 バグ報告 (Bug Report)
+description: 不具合や予期しない動作に関する報告
+title: '[BUG]: '
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: DeskDeck-Solo のバグ報告を行っていただきありがとうございます。
+  - type: textarea
+    id: description
+    attributes:
+      label: 概要 (Description)
+      description: 発生した問題の明確かつ簡潔な説明をご記入ください。
+      placeholder: 何が起きましたか？
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: 動作環境 (Environment)
+      description: ご使用の OS、Chrome バージョン、デバイス（Chromebook等）
+      placeholder: '例: ChromeOS 124.0, Chromebook Tab 10'
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順 (Steps to Reproduce)
+      description: 不具合を再現するための手順を順を追ってご記入ください。
+      placeholder: |
+        1. サイドパネルで 'Meeting Deck' を選択
+        2. マイクミュートボタンをタップ
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待される動作 (Expected Behavior)
+      description: 本来どう動作するべきでしたか？
+    validations:
+      required: false

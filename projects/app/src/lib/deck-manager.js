@@ -24,7 +24,7 @@ export const DECK_PRESETS = {
         defaultValue: 70,
         step: 1,
         unit: '%',
-        action: 'set_volume'
+        action: 'set_volume',
       },
       {
         id: 'media_speed',
@@ -35,7 +35,7 @@ export const DECK_PRESETS = {
         defaultValue: 1.0,
         step: 0.25,
         unit: 'x',
-        action: 'set_speed'
+        action: 'set_speed',
       },
       {
         id: 'media_fader',
@@ -46,7 +46,7 @@ export const DECK_PRESETS = {
         defaultValue: 80,
         step: 1,
         unit: '%',
-        action: 'set_fader'
+        action: 'set_fader',
       },
       {
         id: 'jog_seek',
@@ -57,7 +57,7 @@ export const DECK_PRESETS = {
         defaultValue: 50,
         step: 1,
         unit: '',
-        action: 'seek_dial'
+        action: 'seek_dial',
       },
       {
         id: 'media_pad',
@@ -69,15 +69,15 @@ export const DECK_PRESETS = {
           { id: 'play', label: 'Play', icon: '▶' },
           { id: 'pause', label: 'Pause', icon: '⏸' },
           { id: 'prev', label: 'Prev', icon: '⏮' },
-          { id: 'next', label: 'Next', icon: '⏭' }
-        ]
+          { id: 'next', label: 'Next', icon: '⏭' },
+        ],
       },
       {
         id: 'media_mute',
         type: 'switch',
         label: 'Soft Mute',
         defaultValue: false,
-        action: 'toggle_mute'
+        action: 'toggle_mute',
       },
       {
         id: 'media_pip',
@@ -85,7 +85,7 @@ export const DECK_PRESETS = {
         label: 'Picture-in-Picture',
         icon: '🖼️',
         variant: 'secondary',
-        action: 'toggle_pip'
+        action: 'toggle_pip',
       },
       {
         id: 'media_fullscreen',
@@ -93,9 +93,9 @@ export const DECK_PRESETS = {
         label: 'Fullscreen',
         icon: '⛶',
         variant: 'secondary',
-        action: 'toggle_fullscreen'
-      }
-    ]
+        action: 'toggle_fullscreen',
+      },
+    ],
   },
   meeting: {
     id: 'meeting',
@@ -112,7 +112,7 @@ export const DECK_PRESETS = {
         defaultValue: 80,
         step: 1,
         unit: '%',
-        action: 'set_mic_level'
+        action: 'set_mic_level',
       },
       {
         id: 'broadcast_fader',
@@ -123,21 +123,21 @@ export const DECK_PRESETS = {
         defaultValue: 90,
         step: 1,
         unit: '%',
-        action: 'set_stream_level'
+        action: 'set_stream_level',
       },
       {
         id: 'emergency_cut',
         type: 'flip_switch',
         label: 'Emergency Guard',
         defaultValue: false,
-        action: 'toggle_emergency_cut'
+        action: 'toggle_emergency_cut',
       },
       {
         id: 'camera_toggle',
         type: 'switch',
         label: 'Camera On',
         defaultValue: true,
-        action: 'toggle_camera'
+        action: 'toggle_camera',
       },
       {
         id: 'meeting_pad',
@@ -149,8 +149,8 @@ export const DECK_PRESETS = {
           { id: 'hand', label: 'Hand', icon: '✋' },
           { id: 'applause', label: 'Clap', icon: '👏' },
           { id: 'thumbsup', label: 'Like', icon: '👍' },
-          { id: 'heart', label: 'Love', icon: '❤️' }
-        ]
+          { id: 'heart', label: 'Love', icon: '❤️' },
+        ],
       },
       {
         id: 'leave_call',
@@ -158,9 +158,9 @@ export const DECK_PRESETS = {
         label: 'Leave Call',
         icon: '📞',
         variant: 'danger',
-        action: 'leave_call'
-      }
-    ]
+        action: 'leave_call',
+      },
+    ],
   },
   reader: {
     id: 'reader',
@@ -177,7 +177,7 @@ export const DECK_PRESETS = {
         defaultValue: 100,
         step: 5,
         unit: '%',
-        action: 'set_zoom'
+        action: 'set_zoom',
       },
       {
         id: 'brightness_fader',
@@ -188,21 +188,21 @@ export const DECK_PRESETS = {
         defaultValue: 100,
         step: 1,
         unit: '%',
-        action: 'set_brightness'
+        action: 'set_brightness',
       },
       {
         id: 'contrast_guard',
         type: 'flip_switch',
         label: 'High Contrast',
         defaultValue: false,
-        action: 'toggle_contrast_lock'
+        action: 'toggle_contrast_lock',
       },
       {
         id: 'dark_mode',
         type: 'switch',
         label: 'Dark Theme',
         defaultValue: true,
-        action: 'toggle_dark_reader'
+        action: 'toggle_dark_reader',
       },
       {
         id: 'reader_pad',
@@ -214,8 +214,8 @@ export const DECK_PRESETS = {
           { id: 'top', label: 'Top', icon: '⏫' },
           { id: 'pgup', label: 'PgUp', icon: '▲' },
           { id: 'pgdn', label: 'PgDn', icon: '▼' },
-          { id: 'bot', label: 'Bot', icon: '⏬' }
-        ]
+          { id: 'bot', label: 'Bot', icon: '⏬' },
+        ],
       },
       {
         id: 'reader_toggle',
@@ -223,9 +223,9 @@ export const DECK_PRESETS = {
         label: 'Reader View',
         icon: '📖',
         variant: 'primary',
-        action: 'toggle_reader_mode'
-      }
-    ]
+        action: 'toggle_reader_mode',
+      },
+    ],
   },
   audio: {
     id: 'audio',
@@ -242,7 +242,7 @@ export const DECK_PRESETS = {
         defaultValue: 75,
         step: 1,
         unit: '%',
-        action: 'set_master_gain'
+        action: 'set_master_gain',
       },
       {
         id: 'main_fader',
@@ -253,21 +253,21 @@ export const DECK_PRESETS = {
         defaultValue: 0,
         step: 1,
         unit: 'dB',
-        action: 'set_channel_fader'
+        action: 'set_channel_fader',
       },
       {
         id: 'soundboard_pad',
         type: 'pad4x4',
         label: '16-Pad Soundboard FX',
         defaultValue: {},
-        action: 'soundboard_trigger'
+        action: 'soundboard_trigger',
       },
       {
         id: 'master_mute',
         type: 'switch',
         label: 'Mute All',
         defaultValue: false,
-        action: 'toggle_master_mute'
+        action: 'toggle_master_mute',
       },
       {
         id: 'reset_eq',
@@ -275,9 +275,9 @@ export const DECK_PRESETS = {
         label: 'Reset EQ',
         icon: '↺',
         variant: 'secondary',
-        action: 'reset_audio_eq'
-      }
-    ]
+        action: 'reset_audio_eq',
+      },
+    ],
   },
   standard: {
     id: 'standard',
@@ -294,7 +294,7 @@ export const DECK_PRESETS = {
         defaultValue: 50,
         step: 2,
         unit: '',
-        action: 'scroll_dial'
+        action: 'scroll_dial',
       },
       {
         id: 'speed_fader',
@@ -305,7 +305,7 @@ export const DECK_PRESETS = {
         defaultValue: 5,
         step: 1,
         unit: 'x',
-        action: 'set_scroll_speed'
+        action: 'set_scroll_speed',
       },
       {
         id: 'tab_pad',
@@ -317,15 +317,15 @@ export const DECK_PRESETS = {
           { id: 'new', label: 'New', icon: '➕' },
           { id: 'close', label: 'Close', icon: '✖' },
           { id: 'prev', label: 'Prev', icon: '◀' },
-          { id: 'next', label: 'Next', icon: '▶' }
-        ]
+          { id: 'next', label: 'Next', icon: '▶' },
+        ],
       },
       {
         id: 'keep_awake',
         type: 'switch',
         label: 'Keep Awake',
         defaultValue: false,
-        action: 'toggle_keep_awake'
+        action: 'toggle_keep_awake',
       },
       {
         id: 'mute_bg_tabs',
@@ -333,7 +333,7 @@ export const DECK_PRESETS = {
         label: 'Mute BG Tabs',
         icon: '🔇',
         variant: 'secondary',
-        action: 'mute_background_tabs'
+        action: 'mute_background_tabs',
       },
       {
         id: 'bookmark_page',
@@ -341,10 +341,10 @@ export const DECK_PRESETS = {
         label: 'Bookmark',
         icon: '⭐',
         variant: 'secondary',
-        action: 'bookmark_page'
-      }
-    ]
-  }
+        action: 'bookmark_page',
+      },
+    ],
+  },
 };
 
 /**
@@ -361,9 +361,9 @@ export function getDeckPreset(deckId) {
  * @returns {Array<{id: string, nameKey: string, title: string}>}
  */
 export function getAvailableDecks() {
-  return Object.values(DECK_PRESETS).map(deck => ({
+  return Object.values(DECK_PRESETS).map((deck) => ({
     id: deck.id,
     nameKey: deck.nameKey,
-    title: deck.title
+    title: deck.title,
   }));
 }

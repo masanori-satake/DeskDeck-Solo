@@ -1,0 +1,31 @@
+name: ✨ 機能提案 (Feature Request)
+description: 新機能や改善アイデアの提案
+title: '[FEAT]: '
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: DeskDeck-Solo の機能提案を行っていただきありがとうございます。
+  - type: textarea
+    id: problem
+    attributes:
+      label: 解決したい課題 (Problem Statement)
+      description: どのような課題や不便さを解決したいですか？
+      placeholder: 現状の機能では...
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: 提案する機能概要 (Proposed Solution)
+      description: どのような機能や改善を望みますか？
+      placeholder: ○○デッキに××機能を追加する...
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 検討した代替案 (Alternatives Considered)
+      description: 検討した他のアプローチがあれば記入してください。
+    validations:
+      required: false

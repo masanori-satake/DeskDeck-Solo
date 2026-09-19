@@ -15,11 +15,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   saveBtn.addEventListener('click', async () => {
     const newSettings = {
       soundEffects: soundInput.checked,
-      hapticFeedback: hapticInput.checked
+      hapticFeedback: hapticInput.checked,
     };
     await saveSettings(newSettings);
 
-    const savedText = typeof chrome !== 'undefined' && chrome.i18n ? chrome.i18n.getMessage('saved') || 'Saved!' : 'Saved!';
+    const savedText =
+      typeof chrome !== 'undefined' && chrome.i18n
+        ? chrome.i18n.getMessage('saved') || 'Saved!'
+        : 'Saved!';
     saveStatus.textContent = savedText;
     setTimeout(() => {
       saveStatus.textContent = '';

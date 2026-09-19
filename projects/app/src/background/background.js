@@ -7,7 +7,7 @@ import {
   toggleKeepAwake,
   getKeepAwakeStatus,
   muteBackgroundTabs,
-  setTabBrightness
+  setTabBrightness,
 } from '../lib/system.js';
 
 // Enable side panel to open on extension icon click
@@ -156,7 +156,7 @@ async function handleDeckAction(message) {
       if (activeTab && activeTab.url && activeTab.title && chrome.bookmarks) {
         await chrome.bookmarks.create({
           title: activeTab.title,
-          url: activeTab.url
+          url: activeTab.url,
         });
         return { bookmarked: true };
       }

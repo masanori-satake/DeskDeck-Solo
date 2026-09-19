@@ -41,12 +41,19 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-body, html {
+body,
+html {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
-  font-family: Roboto, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    Roboto,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
   background-color: var(--bg-color);
   color: var(--text-main);
   overflow-x: hidden;
@@ -110,7 +117,9 @@ body, html {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.1s, background-color 0.2s;
+  transition:
+    transform 0.1s,
+    background-color 0.2s;
 }
 
 .icon-btn:active {
@@ -291,7 +300,9 @@ body, html {
   height: 160px;
   background-color: #0b0d12;
   border-radius: 4px;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8), 0 0 1px rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.8),
+    0 0 1px rgba(255, 255, 255, 0.1);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -313,21 +324,27 @@ body, html {
   border-radius: 6px;
   background: linear-gradient(180deg, #4b526d 0%, #202436 50%, #151824 100%);
   border: 1px solid #5a6282;
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.3), 0 6px 12px rgba(0, 0, 0, 0.6);
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.3),
+    0 6px 12px rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
   left: calc(50% - 22px);
   cursor: grab;
   touch-action: none;
-  transition: box-shadow 0.15s, border-color 0.15s;
+  transition:
+    box-shadow 0.15s,
+    border-color 0.15s;
 }
 
 .fader-track-wrapper.dragging .fader-cap,
 .fader-cap:active {
   cursor: grabbing;
   border-color: var(--primary-light);
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.4), 0 0 14px var(--primary-glow);
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.4),
+    0 0 14px var(--primary-glow);
 }
 
 .fader-cap-stripe {
@@ -383,7 +400,9 @@ body, html {
 .knob-tick {
   stroke: var(--card-border);
   stroke-linecap: round;
-  transition: stroke 0.15s ease, stroke-width 0.15s ease;
+  transition:
+    stroke 0.15s ease,
+    stroke-width 0.15s ease;
 }
 
 .knob-tick.minor {
@@ -410,27 +429,33 @@ body, html {
   background: var(--knob-bg);
   border: 3px solid var(--knob-border);
   position: relative;
-  box-shadow: inset 0 2px 6px rgba(255,255,255,0.12), 0 8px 20px rgba(0,0,0,0.5);
+  box-shadow:
+    inset 0 2px 6px rgba(255, 255, 255, 0.12),
+    0 8px 20px rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
   touch-action: none;
 }
 
 .knob-dial-wrapper:active .knob-dial,
 .knob-dial-wrapper.dragging .knob-dial {
   border-color: var(--primary);
-  box-shadow: inset 0 2px 6px rgba(255,255,255,0.2), 0 0 20px var(--primary-glow);
+  box-shadow:
+    inset 0 2px 6px rgba(255, 255, 255, 0.2),
+    0 0 20px var(--primary-glow);
 }
 
 .knob-cap {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.15), rgba(0,0,0,0.4));
+  background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.15), rgba(0, 0, 0, 0.4));
   border: 1px solid var(--card-border);
-  box-shadow: inset 0 1px 3px rgba(255,255,255,0.2);
+  box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.2);
   pointer-events: none;
 }
 
@@ -479,7 +504,9 @@ body, html {
   border: 1px solid var(--card-border);
   background: linear-gradient(180deg, #2d3246 0%, #1e2130 100%);
   color: var(--text-main);
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.15), 0 4px 8px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.15),
+    0 4px 8px rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -487,25 +514,35 @@ body, html {
   gap: 2px;
   cursor: pointer;
   touch-action: none;
-  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s ease, border-color 0.15s;
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease,
+    background 0.15s ease,
+    border-color 0.15s;
   padding: 4px;
 }
 
 .multipad-button.pressed,
 .multipad-button:active {
   transform: translateY(3px) scale(0.96);
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.6),
+    0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .multipad-button.active {
   background: linear-gradient(180deg, var(--primary-light) 0%, var(--primary) 100%);
   border-color: #a5b4fc;
   color: #ffffff;
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.4), 0 0 14px var(--primary-glow);
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.4),
+    0 0 14px var(--primary-glow);
 }
 
 .multipad-button.active.pressed {
-  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.5), 0 0 8px var(--primary-glow);
+  box-shadow:
+    inset 0 3px 8px rgba(0, 0, 0, 0.5),
+    0 0 8px var(--primary-glow);
 }
 
 .multipad-button .pad-icon {
@@ -546,7 +583,9 @@ body, html {
   background-color: #12141c;
   border: 2px solid var(--card-border);
   border-radius: 12px;
-  box-shadow: inset 0 2px 6px rgba(0,0,0,0.8), 0 4px 10px rgba(0,0,0,0.3);
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.8),
+    0 4px 10px rgba(0, 0, 0, 0.3);
   perspective: 400px;
   display: flex;
   align-items: center;
@@ -574,10 +613,13 @@ body, html {
   background: linear-gradient(180deg, #94a3b8 0%, #475569 100%);
   border-radius: 4px;
   border: 1px solid #cbd5e1;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
   transform-origin: bottom center;
   transform: rotateX(25deg);
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background 0.2s,
+    box-shadow 0.2s;
 }
 
 .flip-switch-lever.active {
@@ -592,8 +634,10 @@ body, html {
   height: 8px;
   border-radius: 50%;
   background-color: #334155;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);
-  transition: background-color 0.2s, box-shadow 0.2s;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.8);
+  transition:
+    background-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .flip-switch-led.active {
@@ -611,10 +655,14 @@ body, html {
   background: rgba(239, 68, 68, 0.22);
   border: 2px dashed rgba(239, 68, 68, 0.7);
   backdrop-filter: blur(2px);
-  box-shadow: inset 0 2px 8px rgba(255,255,255,0.2), 0 4px 12px rgba(0,0,0,0.4);
+  box-shadow:
+    inset 0 2px 8px rgba(255, 255, 255, 0.2),
+    0 4px 12px rgba(0, 0, 0, 0.4);
   transform-origin: top center;
   transform: rotateX(0deg);
-  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s;
+  transition:
+    transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.2s;
   cursor: grab;
   display: flex;
   align-items: center;
@@ -635,9 +683,9 @@ body, html {
   font-weight: 800;
   color: #ffffff;
   letter-spacing: 1px;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
   pointer-events: none;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0, 0, 0, 0.4);
   padding: 3px 6px;
   border-radius: 4px;
 }
@@ -647,9 +695,15 @@ body, html {
 }
 
 @keyframes flipSwipeHint {
-  0% { transform: rotateX(0deg); }
-  50% { transform: rotateX(-25deg); }
-  100% { transform: rotateX(0deg); }
+  0% {
+    transform: rotateX(0deg);
+  }
+  50% {
+    transform: rotateX(-25deg);
+  }
+  100% {
+    transform: rotateX(0deg);
+  }
 }
 
 .flip-switch-status {
@@ -693,7 +747,7 @@ body, html {
   top: 2px;
   left: 3px;
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .hw-switch.active .hw-switch-thumb {
@@ -727,7 +781,10 @@ body, html {
   gap: 4px;
   cursor: pointer;
   box-shadow: var(--shadow-depth);
-  transition: transform 0.08s ease, box-shadow 0.08s ease, background-color 0.2s;
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease,
+    background-color 0.2s;
   padding: 8px;
 }
 

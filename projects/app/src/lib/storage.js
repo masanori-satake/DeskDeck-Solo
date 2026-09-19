@@ -6,12 +6,12 @@
 const STORAGE_KEYS = {
   ACTIVE_DECK: 'deskdeck_active_deck',
   DECK_SLOT_STATES: 'deskdeck_slot_states',
-  SETTINGS: 'deskdeck_settings'
+  SETTINGS: 'deskdeck_settings',
 };
 
 const DEFAULT_SETTINGS = {
   soundEffects: true,
-  hapticFeedback: true
+  hapticFeedback: true,
 };
 
 /**

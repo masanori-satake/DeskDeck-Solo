@@ -90,7 +90,9 @@ export function boostTabAudio(mediaElement, boostLevel = 1.0) {
     if (mediaElement && mediaElement instanceof HTMLMediaElement) {
       if (boundMediaElement !== mediaElement || !boostSourceNode) {
         if (boostSourceNode) {
-          try { boostSourceNode.disconnect(); } catch {}
+          try {
+            boostSourceNode.disconnect();
+          } catch {}
         }
         boostSourceNode = boostContext.createMediaElementSource(mediaElement);
         boundMediaElement = mediaElement;
@@ -110,7 +112,7 @@ export function boostTabAudio(mediaElement, boostLevel = 1.0) {
       context: boostContext,
       gainNode: boostGainNode,
       compressorNode: boostCompressorNode,
-      level: targetLevel
+      level: targetLevel,
     };
   } catch (err) {
     console.warn('Tab audio boost initialization failed:', err);
@@ -138,15 +140,21 @@ export function setBoostLevel(boostLevel) {
  */
 export function cleanupTabAudioBoost() {
   if (boostSourceNode) {
-    try { boostSourceNode.disconnect(); } catch {}
+    try {
+      boostSourceNode.disconnect();
+    } catch {}
     boostSourceNode = null;
   }
   if (boostGainNode) {
-    try { boostGainNode.disconnect(); } catch {}
+    try {
+      boostGainNode.disconnect();
+    } catch {}
     boostGainNode = null;
   }
   if (boostCompressorNode) {
-    try { boostCompressorNode.disconnect(); } catch {}
+    try {
+      boostCompressorNode.disconnect();
+    } catch {}
     boostCompressorNode = null;
   }
   if (boostContext) {
