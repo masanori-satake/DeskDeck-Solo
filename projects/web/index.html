@@ -3,17 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DeskDeck-Solo | Virtual Hardware Controller for Chromebook Tablet Mode</title>
+  <title>DeskDeck-Solo | Chromebookタブレットモード向け 仮想ハードウェアデッキ</title>
   <style>
     :root {
-      --bg-color: #0b0f19;
-      --card-bg: #151c2c;
-      --card-border: #232d42;
-      --primary: #6366f1;
-      --primary-hover: #4f46e5;
-      --text-main: #f3f4f6;
-      --text-muted: #9ca3af;
-      --accent: #10b981;
+      /* Material Design 3 Dark Expressive Palette */
+      --md-sys-color-bg: #0f131a;
+      --md-sys-color-surface: #181c24;
+      --md-sys-color-surface-container: #222733;
+      --md-sys-color-surface-container-high: #2d3342;
+      --md-sys-color-surface-container-highest: #384052;
+      --md-sys-color-outline: #434c5e;
+      --md-sys-color-outline-variant: #2f3646;
+      --md-sys-color-primary: #a8c7ff;
+      --md-sys-color-on-primary: #003062;
+      --md-sys-color-primary-container: #1b457d;
+      --md-sys-color-on-primary-container: #d6e3ff;
+      --md-sys-color-secondary: #00e5ff;
+      --md-sys-color-secondary-container: #004f59;
+      --md-sys-color-tertiary: #ffb4a9;
+      --md-sys-color-tertiary-container: #73342f;
+      --md-sys-color-text-main: #e2e2e9;
+      --md-sys-color-text-muted: #9fa8bc;
+      --md-sys-color-error: #ffb4ab;
+
+      --md-radius-small: 8px;
+      --md-radius-medium: 16px;
+      --md-radius-large: 24px;
+      --md-radius-full: 9999px;
+
+      --md-shadow-1: 0 2px 6px rgba(0, 0, 0, 0.4);
+      --md-shadow-2: 0 4px 16px rgba(0, 0, 0, 0.5);
     }
 
     * {
@@ -23,22 +42,28 @@
     }
 
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-main);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background-color: var(--md-sys-color-bg);
+      color: var(--md-sys-color-text-main);
       line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
     }
 
     .container {
-      max-width: 1100px;
+      max-width: 1140px;
       margin: 0 auto;
       padding: 0 24px;
     }
 
-    /* Header */
+    /* Header Nav */
     header {
-      padding: 24px 0;
-      border-bottom: 1px solid var(--card-border);
+      background-color: rgba(15, 19, 26, 0.85);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid var(--md-sys-color-outline-variant);
+      padding: 16px 0;
     }
 
     .nav {
@@ -47,214 +72,625 @@
       align-items: center;
     }
 
-    .logo {
+    .brand {
       display: flex;
       align-items: center;
       gap: 12px;
-      font-size: 22px;
-      font-weight: 700;
-      color: var(--text-main);
       text-decoration: none;
+      color: var(--md-sys-color-text-main);
     }
 
-    /* Hero */
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--md-sys-color-primary) 0%, var(--md-sys-color-secondary) 100%);
+      border-radius: var(--md-radius-medium);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: var(--md-shadow-1);
+    }
+
+    .brand-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .nav-badge {
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 14px;
+      background-color: var(--md-sys-color-surface-container-high);
+      color: var(--md-sys-color-primary);
+      border: 1px solid var(--md-sys-color-outline);
+      border-radius: var(--md-radius-full);
+    }
+
+    /* Hero Section */
     .hero {
       padding: 80px 0 60px;
       text-align: center;
     }
 
-    .badge {
-      display: inline-block;
-      padding: 6px 16px;
-      border-radius: 20px;
-      background-color: rgba(99, 102, 241, 0.15);
-      color: var(--primary);
-      border: 1px solid var(--primary);
+    .hero-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 18px;
+      border-radius: var(--md-radius-full);
+      background-color: var(--md-sys-color-primary-container);
+      color: var(--md-sys-color-on-primary-container);
       font-size: 14px;
       font-weight: 600;
       margin-bottom: 24px;
+      border: 1px solid rgba(168, 199, 255, 0.2);
     }
 
     .hero h1 {
-      font-size: 48px;
+      font-size: 44px;
       font-weight: 800;
-      line-height: 1.2;
-      margin-bottom: 20px;
-      background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%);
+      line-height: 1.25;
+      margin-bottom: 24px;
+      letter-spacing: -0.8px;
+      background: linear-gradient(135deg, #ffffff 30%, var(--md-sys-color-primary) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
 
     .hero p {
-      font-size: 20px;
-      color: var(--text-muted);
-      max-width: 720px;
+      font-size: 19px;
+      color: var(--md-sys-color-text-muted);
+      max-width: 760px;
       margin: 0 auto 36px;
+      line-height: 1.7;
     }
 
-    /* Features Grid */
-    .features {
-      padding: 60px 0;
+    .hero-highlights {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
     }
 
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 24px;
+    .highlight-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background-color: var(--md-sys-color-surface-container);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      padding: 10px 20px;
+      border-radius: var(--md-radius-medium);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--md-sys-color-text-main);
     }
 
-    .feature-card {
-      background-color: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 32px;
-      transition: transform 0.2s, border-color 0.2s;
+    /* Problem & Solution Comparison Section */
+    .comparison-section {
+      padding: 70px 0;
+      background-color: var(--md-sys-color-surface);
+      border-y: 1px solid var(--md-sys-color-outline-variant);
+      margin: 40px 0;
+      border-top: 1px solid var(--md-sys-color-outline-variant);
+      border-bottom: 1px solid var(--md-sys-color-outline-variant);
     }
 
-    .feature-card:hover {
-      transform: translateY(-4px);
-      border-color: var(--primary);
+    .section-header {
+      text-align: center;
+      margin-bottom: 48px;
     }
 
-    .feature-icon {
-      font-size: 36px;
-      margin-bottom: 16px;
-    }
-
-    .feature-card h3 {
-      font-size: 20px;
-      margin-bottom: 12px;
-    }
-
-    .feature-card p {
-      color: var(--text-muted);
-      font-size: 15px;
-    }
-
-    /* Decks Overview */
-    .decks-section {
-      padding: 60px 0;
+    .section-subtitle {
+      color: var(--md-sys-color-primary);
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      display: block;
     }
 
     .section-title {
-      text-align: center;
       font-size: 32px;
-      margin-bottom: 40px;
+      font-weight: 700;
+      color: var(--md-sys-color-text-main);
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+    }
+
+    .card-problem, .card-solution {
+      border-radius: var(--md-radius-large);
+      padding: 36px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .card-problem {
+      background-color: rgba(115, 52, 47, 0.15);
+      border: 1px solid rgba(255, 180, 169, 0.3);
+    }
+
+    .card-solution {
+      background-color: rgba(27, 69, 125, 0.25);
+      border: 1px solid var(--md-sys-color-primary);
+      box-shadow: var(--md-shadow-2);
+    }
+
+    .card-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: var(--md-radius-full);
+      font-size: 13px;
+      font-weight: 700;
+      width: fit-content;
+      margin-bottom: 20px;
+    }
+
+    .card-problem .card-badge {
+      background-color: var(--md-sys-color-tertiary-container);
+      color: var(--md-sys-color-tertiary);
+    }
+
+    .card-solution .card-badge {
+      background-color: var(--md-sys-color-primary-container);
+      color: var(--md-sys-color-primary);
+    }
+
+    .card-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .card-description {
+      color: var(--md-sys-color-text-muted);
+      font-size: 15px;
+      margin-bottom: 24px;
+    }
+
+    .point-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .point-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 15px;
+    }
+
+    .point-icon {
+      font-size: 18px;
+      line-height: 1.4;
+      flex-shrink: 0;
+    }
+
+    /* Deck Cards Section */
+    .decks-section {
+      padding: 60px 0 80px;
     }
 
     .decks-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+
+    .deck-card {
+      background-color: var(--md-sys-color-surface-container);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-radius-large);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .deck-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--md-sys-color-primary);
+      box-shadow: var(--md-shadow-2);
+    }
+
+    .deck-header {
+      display: flex;
+      align-items: center;
       gap: 16px;
+      margin-bottom: 20px;
     }
 
-    .deck-pill {
-      background-color: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 20px;
-      text-align: center;
+    .deck-icon-box {
+      width: 52px;
+      height: 52px;
+      border-radius: var(--md-radius-medium);
+      background-color: var(--md-sys-color-surface-container-highest);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      border: 1px solid var(--md-sys-color-outline);
     }
 
-    .deck-pill .icon {
-      font-size: 28px;
-      display: block;
-      margin-bottom: 8px;
+    .deck-name {
+      font-size: 20px;
+      font-weight: 700;
     }
 
-    .deck-pill h4 {
-      font-size: 16px;
-      color: var(--text-main);
+    .deck-subtitle {
+      font-size: 13px;
+      color: var(--md-sys-color-primary);
+      font-weight: 600;
+    }
+
+    .deck-desc {
+      font-size: 14px;
+      color: var(--md-sys-color-text-muted);
+      margin-bottom: 20px;
+      min-height: 42px;
+    }
+
+    .controls-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--md-sys-color-text-muted);
+      margin-bottom: 12px;
+    }
+
+    .controls-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .control-tag {
+      background-color: var(--md-sys-color-surface-container-high);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      color: var(--md-sys-color-text-main);
+      padding: 6px 12px;
+      border-radius: var(--md-radius-small);
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Architecture Features Section */
+    .arch-section {
+      padding: 60px 0;
+      background-color: var(--md-sys-color-surface);
+      border-top: 1px solid var(--md-sys-color-outline-variant);
+    }
+
+    .arch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+
+    .arch-card {
+      background-color: var(--md-sys-color-surface-container);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-radius-medium);
+      padding: 24px;
+    }
+
+    .arch-card h3 {
+      font-size: 18px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .arch-card p {
+      font-size: 14px;
+      color: var(--md-sys-color-text-muted);
     }
 
     /* Footer */
     footer {
-      border-top: 1px solid var(--card-border);
+      border-top: 1px solid var(--md-sys-color-outline-variant);
       padding: 40px 0;
       text-align: center;
-      color: var(--text-muted);
+      color: var(--md-sys-color-text-muted);
       font-size: 14px;
+    }
+
+    footer p {
+      margin-bottom: 8px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 32px;
+      }
+      .hero p {
+        font-size: 16px;
+      }
+      .comparison-grid {
+        grid-template-columns: 1fr;
+      }
+      .decks-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
+  <!-- Header Nav -->
   <header>
     <div class="container nav">
-      <a href="#" class="logo">
-        <span>🎛️</span>
-        <span>DeskDeck-Solo</span>
+      <a href="#" class="brand">
+        <div class="brand-icon">🎛️</div>
+        <span class="brand-title">DeskDeck-Solo</span>
       </a>
-      <span class="badge">Pure Vanilla ES Modules</span>
+      <span class="nav-badge">Pure Vanilla ES Modules</span>
     </div>
   </header>
 
   <main>
+    <!-- Hero Section -->
     <section class="hero">
       <div class="container">
-        <span class="badge">Chrome Extension for Chromebook Tablet Mode</span>
+        <div class="hero-chip">
+          <span>✨</span>
+          <span>Chromebook Tablet Mode Optimization</span>
+        </div>
         <h1>Chromebookのサイドパネルに再現する<br>大型タッチ仮想ハードウェアデッキ</h1>
         <p>
-          外部ライブラリ・外部通信を一切使わず完全ローカルで動作。
-          大型回転ノブ、トグルスイッチ、大判タッチボタンでChromebookのタブレット操作を物理コントローラーのように最適化します。
+          Chromebookをタブレットモードで使う際の「小さなWeb操作UI」や「動画・Web会議での誤操作」を解決。
+          サイドパネル上に物理ハードウェアのような大型ノブ・トグルスイッチ・専用デッキを構築します。
         </p>
-      </div>
-    </section>
-
-    <section class="features">
-      <div class="container">
-        <div class="features-grid">
-          <div class="feature-card">
-            <div class="feature-icon">⚡</div>
-            <h3>完全ローカル・依存なし</h3>
-            <p>WebpackやReact等のビルドツール・フレームワークを使わない Pure Vanilla JavaScript / HTML5 / CSS3 構成。</p>
+        <div class="hero-highlights">
+          <div class="highlight-item">
+            <span>⚡</span> 完全ローカル（外部通信なし）
           </div>
-
-          <div class="feature-card">
-            <div class="feature-icon">👆</div>
-            <h3>大型タッチターゲット</h3>
-            <p>Pointer Events を使用した大型回転ノブやトグルスイッチを搭載。Chromebookのタッチパネルで快適にドラッグ操作が可能。</p>
+          <div class="highlight-item">
+            <span>🎛️</span> Pointer Events大型回転ノブ
           </div>
-
-          <div class="feature-card">
-            <div class="feature-icon">🔒</div>
-            <h3>プライバシー＆セキュリティ</h3>
-            <p>外部サーバー通信やアナリティクスを一切含まないManifest V3準拠の完全スタンドアロン構造。</p>
+          <div class="highlight-item">
+            <span>🔒</span> Manifest V3 準拠
+          </div>
+          <div class="highlight-item">
+            <span>📐</span> Material 3 トーンデザイン
           </div>
         </div>
       </div>
     </section>
 
+    <!-- Problem & Solution Comparison Section -->
+    <section class="comparison-section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-subtitle">Problem & Solution</span>
+          <h2 class="section-title">Chromebook タブレットモードの課題と解決策</h2>
+        </div>
+
+        <div class="comparison-grid">
+          <!-- Problem Card -->
+          <div class="card-problem">
+            <span class="card-badge">
+              <span>⚠️</span> タブレットモードの課題
+            </span>
+            <h3 class="card-title">小さなUIボタンと操作性の限界</h3>
+            <p class="card-description">
+              Chromebookをキーボードから切り離してタブレットモードで使う際、Webアプリ特有の操作課題が発生します。
+            </p>
+            <ul class="point-list">
+              <li class="point-item">
+                <span class="point-icon">❌</span>
+                <span>Web会議（Meet / Teams）のマイクミュートやカメラ切り替えボタンが小さく指でタップしづらい</span>
+              </li>
+              <li class="point-item">
+                <span class="point-icon">❌</span>
+                <span>全画面で動画視聴中や別タブでの作業中に、音量微調整や一時停止のために画面を切り替える手間</span>
+              </li>
+              <li class="point-item">
+                <span class="point-icon">❌</span>
+                <span>タッチパネル操作で意図せず離脱ボタンを押してしまう誤操作のリスク</span>
+              </li>
+              <li class="point-item">
+                <span class="point-icon">❌</span>
+                <span>電子書籍やドキュメント閲覧時の拡大・縮小やダークモード切り替えのメニュー階層の深さ</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Solution Card -->
+          <div class="card-solution">
+            <span class="card-badge">
+              <span>💡</span> DeskDeck-Soloの解決策
+            </span>
+            <h3 class="card-title">サイドパネルに常駐する大型タッチデッキ</h3>
+            <p class="card-description">
+              ChromeのサイドパネルUIを活用し、タッチ操作に特化した外付け物理コントローラーの質感を再現。
+            </p>
+            <ul class="point-list">
+              <li class="point-item">
+                <span class="point-icon">✅</span>
+                <span>最小64px以上の超大型タッチターゲットと直感的なフィードバック（Pointer Events対応）</span>
+              </li>
+              <li class="point-item">
+                <span class="point-icon">✅</span>
+                <span>アクティブなWebページを邪魔せず、常時アクセス可能なサイドパネル専用UI</span>
+              </li>
+              <li class="point-item">
+                <span class="point-icon">✅</span>
+                <span>誤操作を防ぐ保護カバー付きトグルスイッチ構造（離脱操作等の安全保護）</span>
+              </li>
+              <li class="point-item">
+                <span class="point-icon">✅</span>
+                <span>用途に合わせてワンタッチで切替可能な5つのプリセットハードウェアデッキ</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 Preset Decks Section -->
     <section class="decks-section">
       <div class="container">
-        <h2 class="section-title">プリセットデッキ一覧</h2>
+        <div class="section-header">
+          <span class="section-subtitle">Presets</span>
+          <h2 class="section-title">5つのプリセットデッキ</h2>
+        </div>
+
         <div class="decks-grid">
-          <div class="deck-pill">
-            <span class="icon">🎵</span>
-            <h4>Media Deck</h4>
+          <!-- Media Deck -->
+          <div class="deck-card">
+            <div class="deck-header">
+              <div class="deck-icon-box">🎵</div>
+              <div>
+                <h3 class="deck-name">Media Deck</h3>
+                <span class="deck-subtitle">動画・音楽プレイヤーコントロール</span>
+              </div>
+            </div>
+            <p class="deck-desc">
+              YouTubeやSpotifyなどのWebメディアプレイヤーを快適に操作。大きなノブで音量を細かくダイヤル調整できます。
+            </p>
+            <div class="controls-label">主な機能・コントロール</div>
+            <div class="controls-tags">
+              <span class="control-tag">🎛️ 大型音量回転ノブ</span>
+              <span class="control-tag">⏯️ 再生 / 一時停止</span>
+              <span class="control-tag">⏭️ トラック送り / 戻し</span>
+              <span class="control-tag">🔇 ワンタッチ消音</span>
+            </div>
           </div>
-          <div class="deck-pill">
-            <span class="icon">📹</span>
-            <h4>Meeting Deck</h4>
+
+          <!-- Meeting Deck -->
+          <div class="deck-card">
+            <div class="deck-header">
+              <div class="deck-icon-box">📹</div>
+              <div>
+                <h3 class="deck-name">Meeting Deck</h3>
+                <span class="deck-subtitle">Web会議クイックコントローラー</span>
+              </div>
+            </div>
+            <p class="deck-desc">
+              Google Meet や Microsoft Teams での会議操作を爆速化。誤タップを防ぐ安全トグルスイッチを搭載。
+            </p>
+            <div class="controls-label">主な機能・コントロール</div>
+            <div class="controls-tags">
+              <span class="control-tag">🎙️ マイクミュートトグル</span>
+              <span class="control-tag">📷 カメラスイッチ</span>
+              <span class="control-tag">✋ 挙手リアクション</span>
+              <span class="control-tag">🛡️ 誤操作防止つき退室</span>
+            </div>
           </div>
-          <div class="deck-pill">
-            <span class="icon">📖</span>
-            <h4>Reader Deck</h4>
+
+          <!-- Reader Deck -->
+          <div class="deck-card">
+            <div class="deck-header">
+              <div class="deck-icon-box">📖</div>
+              <div>
+                <h3 class="deck-name">Reader Deck</h3>
+                <span class="deck-subtitle">ドキュメント・電子書籍リーダー</span>
+              </div>
+            </div>
+            <p class="deck-desc">
+              Web記事やPDF、電子書籍の閲覧環境を素早く最適化。フォントサイズや表示モードをワンタップで調整。
+            </p>
+            <div class="controls-label">主な機能・コントロール</div>
+            <div class="controls-tags">
+              <span class="control-tag">🔍 ズーム調整ノブ</span>
+              <span class="control-tag">🔤 フォントサイズ切替</span>
+              <span class="control-tag">🌙 ダークモードトグル</span>
+              <span class="control-tag">📜 スクロール制御</span>
+            </div>
           </div>
-          <div class="deck-pill">
-            <span class="icon">🎧</span>
-            <h4>Audio Deck</h4>
+
+          <!-- Audio Deck -->
+          <div class="deck-card">
+            <div class="deck-header">
+              <div class="deck-icon-box">🎧</div>
+              <div>
+                <h3 class="deck-name">Audio Deck</h3>
+                <span class="deck-subtitle">ミキサー＆イコライザー</span>
+              </div>
+            </div>
+            <p class="deck-desc">
+              マルチチャンネル音量制御とマスターイコライザ。タブごとの音量バランス調整やオーディオフィードバックを制御。
+            </p>
+            <div class="controls-label">主な機能・コントロール</div>
+            <div class="controls-tags">
+              <span class="control-tag">🎚️ チャンネル別ボリューム</span>
+              <span class="control-tag">🎛️ マスターイコライザ</span>
+              <span class="control-tag">🔈 消音トグル</span>
+              <span class="control-tag">🔔 オーディオ効果音</span>
+            </div>
           </div>
-          <div class="deck-pill">
-            <span class="icon">🖥️</span>
-            <h4>Standard Deck</h4>
+
+          <!-- Standard Deck -->
+          <div class="deck-card">
+            <div class="deck-header">
+              <div class="deck-icon-box">🖥️</div>
+              <div>
+                <h3 class="deck-name">Standard Deck</h3>
+                <span class="deck-subtitle">ブラウザナビゲーション＆ランチャー</span>
+              </div>
+            </div>
+            <p class="deck-desc">
+              Chromebookでのマルチタブ操作をサクサク行う汎用デッキ。タブ切り替えやよく使うショートカットをまとめます。
+            </p>
+            <div class="controls-label">主な機能・コントロール</div>
+            <div class="controls-tags">
+              <span class="control-tag">📑 タブ切り替え / 閉じる</span>
+              <span class="control-tag">➕ 新規タブ作成</span>
+              <span class="control-tag">⭐ お気に入りアクション</span>
+              <span class="control-tag">⚡ クイックショートカット</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Solo Principles Architecture Section -->
+    <section class="arch-section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-subtitle">Architecture</span>
+          <h2 class="section-title">Solo シリーズの設計思想</h2>
+        </div>
+
+        <div class="arch-grid">
+          <div class="arch-card">
+            <h3><span>🚀</span> Zero Dependencies</h3>
+            <p>WebpackやViteなどのビルドツールや外部npmライブラリを一切不使用。Pure Vanilla JS (ES Modules), HTML5, CSS3 のみで構成。</p>
+          </div>
+          <div class="arch-card">
+            <h3><span>🔐</span> Local-First Security</h3>
+            <p>外部Webサーバーへのデータ送信やアナリティクスを排除。全データはブラウザの `chrome.storage.local` 内で厳格に完結。</p>
+          </div>
+          <div class="arch-card">
+            <h3><span>👆</span> Touch-First UX</h3>
+            <p>Chromebookタッチパネル操作を最優先。`touch-action: none` と Pointer Events を駆使した高精度なノブ・スイッチ操作。</p>
           </div>
         </div>
       </div>
     </section>
   </main>
 
+  <!-- Footer -->
   <footer>
     <div class="container">
+      <p>DeskDeck-Solo - Virtual Hardware Controller for Chromebook</p>
       <p>Copyright (c) 2026 Masanori SATAKE. Released under the MIT License.</p>
     </div>
   </footer>
