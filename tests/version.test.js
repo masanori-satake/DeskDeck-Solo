@@ -11,7 +11,10 @@ test('Version Consistency Check', () => {
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 
-  assert.equal(pkg.version, '0.1.0', 'package.json version should be 0.1.0');
-  assert.equal(manifest.version, '0.1.0', 'projects/app/manifest.json version should be 0.1.0');
+  assert.match(
+    pkg.version,
+    /^\d+\.\d+\.\d+$/,
+    'package.json version should follow semver format (x.y.z)'
+  );
   assert.equal(pkg.version, manifest.version, 'package.json and manifest.json versions must match');
 });

@@ -28,6 +28,9 @@ jobs:
       - name: Run Prettier check
         run: npx prettier --check .
 
+      - name: Check Version Bump
+        run: npm run check-version-bump
+
       - name: Run Unit Tests
         run: npm test
 
@@ -41,8 +44,8 @@ jobs:
               console.error(`Version mismatch! package.json: ${pkg.version}, manifest.json: ${manifest.version}`);
               process.exit(1);
             }
-            if (pkg.version !== "0.1.0") {
-              console.error(`Version is not 0.1.0! package.json: ${pkg.version}`);
+            if (!/^\d+\.\d+\.\d+$/.test(pkg.version)) {
+              console.error(`Invalid version format! package.json: ${pkg.version}`);
               process.exit(1);
             }
             const localeFiles = [
@@ -52,5 +55,5 @@ jobs:
               "projects/web/locales/en.json"
             ];
             localeFiles.forEach(f => JSON.parse(fs.readFileSync(f, "utf8")));
-            console.log("All JSON files are valid and version is unified at 0.1.0!");
+            console.log(`All JSON files are valid and version is unified at ${pkg.version}!`);
           '
