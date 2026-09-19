@@ -12,6 +12,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   const { action, payload } = message;
 
+  // Delegate to Teams-specific handler if on Teams
+  if (
+    window.DeskDeckTeams &&
+    window.DeskDeckTeams.isTeams &&
+    window.DeskDeckTeams.isTeams()
+  ) {
+    const handledByTeams = window.DeskDeckTeams.handleAction(action, payload);
+    if (handledByTeams) {
+      sendResponse({ handled: true, source: 'teams' });
+      return true;
+    }
+  }
+
+  // Delegate to Meet-specific handler if on Google Meet
+  if (
+    window.DeskDeckMeet &&
+    window.DeskDeckMeet.isMeet &&
+    window.DeskDeckMeet.isMeet()
+  ) {
+    const handledByMeet = window.DeskDeckMeet.handleAction(action, payload);
+    if (handledByMeet) {
+      sendResponse({ handled: true, source: 'meet' });
+      return true;
+    }
+  }
+
   // Delegate to YouTube-specific handler if on YouTube
   if (
     window.DeskDeckYouTube &&
@@ -178,8 +204,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case 'toggle_mic_mute':
     case 'toggle_camera':
     case 'raise_hand':
+    case 'send_reaction':
+    case 'reaction':
+    case 'pad_reaction':
     case 'leave_call':
-      attemptWebMeetingAction(action);
+    case 'toggle_emergency_cut':
+      attemptWebMeetingAction(action, payload);
       sendResponse({ handled: true });
       break;
 
@@ -456,7 +486,23 @@ function toggleDarkReaderOverlay() {
   }
 }
 
-function attemptWebMeetingAction(action) {
+function attemptWebMeetingAction(action, payload = {}) {
+  // If on Teams or Meet, attempt handling via module
+  if (window.DeskDeckTeams && window.DeskDeckTeams.isTeams && window.DeskDeckTeams.isTeams()) {
+    window.DeskDeckTeams.handleAction(action, payload);
+    return;
+  }
+  if (window.DeskDeckMeet && window.DeskDeckMeet.isMeet && window.DeskDeckMeet.isMeet()) {
+    window.DeskDeckMeet.handleAction(action, payload);
+    return;
+  }
+
+  // Fallback for generic meeting sites
+  if (action === 'leave_call' || action === 'leave_meeting' || action === 'toggle_emergency_cut') {
+    const isProtected = payload && (payload.protectedCover || payload.fromFlipSwitch || payload.enabled);
+    if (!isProtected) return;
+  }
+
   const selectors = {
     toggle_mic_mute: ['[aria-label*="mute"]', '[aria-label*="マイク"]', 'button[data-is-muted]'],
     toggle_camera: ['[aria-label*="camera"]', '[aria-label*="カメラ"]'],
