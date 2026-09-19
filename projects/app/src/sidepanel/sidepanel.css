@@ -1,3 +1,26 @@
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  font-weight: 400;
+  src: url('../fonts/material-symbols-outlined.woff2') format('woff2');
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
 :root {
   --bg-color: #0f1117;
   --panel-bg: #181a24;
@@ -85,34 +108,22 @@ html {
   padding: 16px;
   background-color: var(--card-bg);
   border-bottom: 1px solid var(--card-border);
+}
+
+.deck-header-row {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 12px;
 }
 
-.header-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.brand-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  font-size: 18px;
-  letter-spacing: 0.5px;
-}
-
 .icon-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  border-radius: 14px;
   border: 1px solid var(--card-border);
   background: var(--card-bg);
   color: var(--text-main);
-  font-size: 18px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -128,6 +139,7 @@ html {
 
 /* Deck Select Dropdown */
 .deck-select {
+  flex: 1;
   width: 100%;
   min-height: 52px;
   padding: 0 16px;
@@ -150,31 +162,6 @@ html {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.deck-title-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 4px 8px;
-}
-
-.active-deck-title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text-main);
-}
-
-.status-badge {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 4px 8px;
-  border-radius: 6px;
-  background-color: rgba(16, 185, 129, 0.15);
-  color: var(--success);
-  border: 1px solid var(--success);
-  letter-spacing: 1px;
 }
 
 /* Slots Layout */

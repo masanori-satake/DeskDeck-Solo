@@ -47,6 +47,10 @@
     "message": "タッチフィードバック",
     "description": "設定項目: バイブレーション/フィードバック"
   },
+  "cancel": {
+    "message": "キャンセル",
+    "description": "キャンセルボタン"
+  },
   "save": {
     "message": "保存",
     "description": "保存ボタン"
