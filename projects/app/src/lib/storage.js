@@ -6,6 +6,7 @@
 const STORAGE_KEYS = {
   ACTIVE_DECK: 'deskdeck_active_deck',
   DECK_SLOT_STATES: 'deskdeck_slot_states',
+  SLOT_MAPPINGS: 'deskdeck_slot_mappings',
   SETTINGS: 'deskdeck_settings',
 };
 
@@ -66,6 +67,47 @@ export async function getDeckSlotStates(deckId) {
       return allStates[deckId] || null;
     } catch {
       return null;
+    }
+  }
+}
+
+/**
+ * Get slot mappings
+ * @returns {Promise<Object>}
+ */
+export async function getSlotMappings() {
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+    return new Promise((resolve) => {
+      chrome.storage.local.get([STORAGE_KEYS.SLOT_MAPPINGS], (result) => {
+        resolve(result[STORAGE_KEYS.SLOT_MAPPINGS] || {});
+      });
+    });
+  } else {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.SLOT_MAPPINGS) || '{}');
+    } catch {
+      return {};
+    }
+  }
+}
+
+/**
+ * Save slot mappings
+ * @param {Object} mappings
+ * @returns {Promise<void>}
+ */
+export async function saveSlotMappings(mappings) {
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+    return new Promise((resolve) => {
+      chrome.storage.local.set({ [STORAGE_KEYS.SLOT_MAPPINGS]: mappings }, () => {
+        resolve();
+      });
+    });
+  } else {
+    try {
+      localStorage.setItem(STORAGE_KEYS.SLOT_MAPPINGS, JSON.stringify(mappings));
+    } catch {
+      // ignore write errors in fallback
     }
   }
 }

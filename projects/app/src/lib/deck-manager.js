@@ -348,12 +348,24 @@ export const DECK_PRESETS = {
 };
 
 /**
- * Retrieve deck preset by ID
+ * Retrieve deck preset by ID, applying custom slot mappings if present
  * @param {string} deckId
+ * @param {Object} [slotMappings]
  * @returns {Object}
  */
-export function getDeckPreset(deckId) {
-  return DECK_PRESETS[deckId] || DECK_PRESETS.media;
+export function getDeckPreset(deckId, slotMappings = {}) {
+  const basePreset = DECK_PRESETS[deckId] || DECK_PRESETS.media;
+  if (!slotMappings || !slotMappings[deckId]) {
+    return basePreset;
+  }
+  const deckMappings = slotMappings[deckId];
+  const modifiedSlots = basePreset.slots.map((slot) => {
+    if (deckMappings[slot.id]) {
+      return { ...slot, ...deckMappings[slot.id] };
+    }
+    return slot;
+  });
+  return { ...basePreset, slots: modifiedSlots };
 }
 
 /**
