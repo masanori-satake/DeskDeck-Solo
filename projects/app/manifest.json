@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "__MSG_appName__",
   "description": "__MSG_appDesc__",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "default_locale": "ja",
   "permissions": ["sidePanel", "storage", "tabs", "audio", "power", "bookmarks"],
   "host_permissions": ["<all_urls>"],

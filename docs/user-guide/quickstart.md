@@ -5,7 +5,7 @@ DeskDeck-Solo のインストールから基本操作、おすすめの使い方
 ## 1. インストール手順
 
 1. **ソースコードの取得**:
-   - リポジトリをクローンするか、[Releases](https://github.com/masanori-satake/DeskDeck-Solo/releases) より `DeskDeck-Solo-v0.1.0.zip` をダウンロードして解凍します。
+   - リポジトリをクローンするか、[Releases](https://github.com/masanori-satake/DeskDeck-Solo/releases) より `DeskDeck-Solo-v0.1.1.zip` をダウンロードして解凍します。
 2. **Chrome拡張機能ページを開く**:
    - Google Chrome または ChromeOS ブラウザで `chrome://extensions/` にアクセスします。
    - 画面右上の「デベロッパーモード」を ON にします。
