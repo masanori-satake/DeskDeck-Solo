@@ -47,6 +47,10 @@
     "message": "Haptic Feedback",
     "description": "Options item: Touch feedback"
   },
+  "cancel": {
+    "message": "Cancel",
+    "description": "Cancel button"
+  },
   "save": {
     "message": "Save",
     "description": "Save button"

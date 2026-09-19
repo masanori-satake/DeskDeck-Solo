@@ -168,8 +168,12 @@ export async function getSettings() {
  */
 export async function saveSettings(settings) {
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       chrome.storage.local.set({ [STORAGE_KEYS.SETTINGS]: settings }, () => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+          return;
+        }
         resolve();
       });
     });

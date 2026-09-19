@@ -122,9 +122,33 @@ body {
 
 .action-row {
   display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 16px;
   margin-top: 12px;
+}
+
+.save-error {
+  margin: 0;
+  color: #dc2626;
+  font-size: 14px;
+}
+
+.btn-secondary {
+  min-height: 48px;
+  padding: 0 24px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background-color: transparent;
+  color: var(--text-main);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+  background-color: var(--border);
 }
 
 .btn-primary {
@@ -142,10 +166,4 @@ body {
 
 .btn-primary:hover {
   background-color: var(--primary-hover);
-}
-
-.status-msg {
-  color: #10b981;
-  font-size: 14px;
-  font-weight: 500;
 }

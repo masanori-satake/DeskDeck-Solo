@@ -103,6 +103,12 @@ function setupRuntimeMessageListener() {
   });
 }
 
+/**
+ * Load the selected deck's saved state and render it if the request is still current.
+ *
+ * @param {string} deckId - Identifier of the deck to load and render.
+ * @returns {Promise<void>} A promise that resolves after the current deck is rendered.
+ */
 async function loadAndRenderActiveDeck(deckId) {
   const renderGen = ++currentRenderGen;
 
@@ -121,15 +127,6 @@ async function loadAndRenderActiveDeck(deckId) {
     currentSlotStates[slot.id] =
       slotStates[slot.id] !== undefined ? slotStates[slot.id] : slot.defaultValue;
   });
-
-  const titleElem = document.getElementById('activeDeckTitle');
-  if (titleElem) {
-    const localizedTitle =
-      typeof chrome !== 'undefined' && chrome.i18n
-        ? chrome.i18n.getMessage(currentDeckPreset.nameKey) || currentDeckPreset.title
-        : currentDeckPreset.title;
-    titleElem.textContent = localizedTitle;
-  }
 
   renderDeckSlots(deckId);
 }
