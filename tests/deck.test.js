@@ -74,6 +74,31 @@ test('Storage Module Tests', async (t) => {
     assert.strictEqual(updated.soundEffects, false);
     assert.strictEqual(updated.hapticFeedback, true);
   });
+
+  await t.test('saveSettings rejects storage errors', async () => {
+    const originalChrome = globalThis.chrome;
+    globalThis.chrome = {
+      runtime: { lastError: { message: 'Storage quota exceeded' } },
+      storage: {
+        local: {
+          set: (_items, callback) => callback(),
+        },
+      },
+    };
+
+    try {
+      await assert.rejects(
+        saveSettings({ soundEffects: false, hapticFeedback: true }),
+        /Storage quota exceeded/
+      );
+    } finally {
+      if (originalChrome === undefined) {
+        delete globalThis.chrome;
+      } else {
+        globalThis.chrome = originalChrome;
+      }
+    }
+  });
 });
 
 test('Deck Manager Module Tests', async (t) => {

@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const hapticInput = document.getElementById('hapticFeedback');
   const cancelBtn = document.getElementById('cancelBtn');
   const saveBtn = document.getElementById('saveBtn');
+  const saveError = document.getElementById('saveError');
 
   if (soundInput) soundInput.checked = settings.soundEffects;
   if (hapticInput) hapticInput.checked = settings.hapticFeedback;
@@ -24,8 +25,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         soundEffects: soundInput ? soundInput.checked : true,
         hapticFeedback: hapticInput ? hapticInput.checked : true,
       };
-      await saveSettings(newSettings);
-      window.close();
+      if (saveError) saveError.hidden = true;
+
+      try {
+        await saveSettings(newSettings);
+        window.close();
+      } catch (error) {
+        if (saveError) {
+          saveError.textContent = error instanceof Error ? error.message : String(error);
+          saveError.hidden = false;
+        }
+      }
     });
   }
 });
