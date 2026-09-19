@@ -12,7 +12,9 @@ import {
 import {
   getAvailableDecks,
   DECK_PRESETS,
-  ACTION_OPTIONS_BY_TYPE
+  ACTION_OPTIONS_BY_TYPE,
+  getEffectiveSlotAction,
+  normalizeSlotMappings
 } from '../lib/deck-manager.js';
 
 let currentUrlMappings = [];
@@ -32,6 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load Mappings
   currentUrlMappings = await getUrlMappings();
   currentSlotMappings = await getSlotMappings();
+  currentSlotMappings = normalizeSlotMappings(currentSlotMappings);
 
   setupDeckSelectDropdowns();
   renderSlotAssignmentEditor('media');
@@ -50,6 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await saveSettings(newSettings);
     await saveUrlMappings(currentUrlMappings);
+    currentSlotMappings = normalizeSlotMappings(currentSlotMappings);
     await saveSlotMappings(currentSlotMappings);
 
     const savedText = (typeof chrome !== 'undefined' && chrome.i18n)
@@ -131,9 +135,26 @@ function renderSlotAssignmentEditor(deckId) {
       { value: slot.action, label: slot.action }
     ];
 
-    const currentAction = (deckCustoms[slot.id] && deckCustoms[slot.id].action)
-      ? deckCustoms[slot.id].action
-      : slot.action;
+    const hasConfiguredAction = Object.prototype.hasOwnProperty.call(deckCustoms[slot.id] || {}, 'action');
+    const configuredAction = hasConfiguredAction ? deckCustoms[slot.id].action : undefined;
+    const currentAction = getEffectiveSlotAction(slot, configuredAction);
+
+    if (hasConfiguredAction && configuredAction !== currentAction) {
+      if (!currentSlotMappings[deckId]) currentSlotMappings[deckId] = {};
+      currentSlotMappings[deckId][slot.id] = {
+        ...currentSlotMappings[deckId][slot.id],
+        action: currentAction
+      };
+    }
+
+    if (!options.some((option) => option.value === currentAction)) {
+      const presetOption = document.createElement('option');
+      presetOption.value = currentAction;
+      presetOption.textContent = `${slot.label} (Default)`;
+      presetOption.disabled = true;
+      presetOption.selected = true;
+      select.appendChild(presetOption);
+    }
 
     options.forEach((opt) => {
       const optionElem = document.createElement('option');
@@ -294,8 +315,19 @@ function setupBackupAndRestore() {
 
           const saveStatus = document.getElementById('saveStatus');
           if (result.success) {
-            currentUrlMappings = await getUrlMappings();
-            currentSlotMappings = await getSlotMappings();
+            const [settings, urlMappings, slotMappings] = await Promise.all([
+              getSettings(),
+              getUrlMappings(),
+              getSlotMappings()
+            ]);
+            currentUrlMappings = urlMappings;
+            currentSlotMappings = slotMappings;
+            currentSlotMappings = normalizeSlotMappings(currentSlotMappings);
+
+            const soundInput = document.getElementById('soundEffects');
+            const hapticInput = document.getElementById('hapticFeedback');
+            if (soundInput) soundInput.checked = settings.soundEffects;
+            if (hapticInput) hapticInput.checked = settings.hapticFeedback;
 
             const deckSelectEdit = document.getElementById('deckSelectEdit');
             renderSlotAssignmentEditor(deckSelectEdit ? deckSelectEdit.value : 'media');

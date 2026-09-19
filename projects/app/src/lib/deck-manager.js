@@ -357,15 +357,11 @@ export const ACTION_OPTIONS_BY_TYPE = {
     { value: 'seek_dial', label: 'Jog Dial Seek' },
     { value: 'set_mic_level', label: 'Mic Gain' },
     { value: 'set_zoom', label: 'Zoom Dial (50-200%)' },
-    { value: 'set_master_gain', label: 'Master Gain' },
     { value: 'scroll_dial', label: 'Scroll Wheel Dial' }
   ],
   fader: [
     { value: 'set_fader', label: 'Playback Fader' },
-    { value: 'set_stream_level', label: 'Stream Level' },
-    { value: 'set_brightness', label: 'Brightness Dimmer' },
-    { value: 'set_channel_fader', label: 'PA Channel Fader' },
-    { value: 'set_scroll_speed', label: 'Scroll Speed' }
+    { value: 'set_brightness', label: 'Brightness Dimmer' }
   ],
   switch: [
     { value: 'toggle_mute', label: 'Soft Mute' },
@@ -375,28 +371,69 @@ export const ACTION_OPTIONS_BY_TYPE = {
     { value: 'toggle_keep_awake', label: 'Keep Awake Switch' }
   ],
   flip_switch: [
-    { value: 'toggle_emergency_cut', label: 'Emergency Guard Switch' },
-    { value: 'toggle_contrast_lock', label: 'High Contrast Guard' }
+    { value: 'toggle_emergency_cut', label: 'Emergency Guard Switch' }
   ],
   button: [
     { value: 'toggle_pip', label: 'Picture-in-Picture' },
     { value: 'toggle_fullscreen', label: 'Toggle Fullscreen' },
     { value: 'leave_call', label: 'Leave Call / Exit' },
     { value: 'toggle_reader_mode', label: 'Reader View' },
-    { value: 'reset_audio_eq', label: 'Reset Audio EQ' },
     { value: 'mute_background_tabs', label: 'Mute Background Tabs' },
     { value: 'bookmark_page', label: 'Bookmark Page' }
   ],
   pad2x2: [
     { value: 'pad_action', label: 'Transport Pad (Play/Pause/Prev/Next)' },
-    { value: 'pad_reaction', label: 'Reactions Pad (Hand/Clap/Like/Love)' },
-    { value: 'pad_nav', label: 'Navigation Pad (Top/PgUp/PgDn/Bot)' },
-    { value: 'pad_tab', label: 'Tab Control Pad (New/Close/Prev/Next)' }
+    { value: 'pad_reaction', label: 'Reactions Pad (Hand/Clap/Like/Love)' }
   ],
-  pad4x4: [
-    { value: 'soundboard_trigger', label: '16-Pad Soundboard FX' }
-  ]
+  pad4x4: []
 };
+
+const ACTION_NUMERIC_PROFILES = {
+  set_volume: { min: 0, max: 100, defaultValue: 70, step: 1, unit: '%' },
+  set_speed: { min: 0.25, max: 3, defaultValue: 1, step: 0.25, unit: 'x' },
+  seek_dial: { min: 0, max: 100, defaultValue: 50, step: 1, unit: '' },
+  set_mic_level: { min: 0, max: 100, defaultValue: 80, step: 1, unit: '%' },
+  set_zoom: { min: 50, max: 200, defaultValue: 100, step: 5, unit: '%' },
+  scroll_dial: { min: 0, max: 100, defaultValue: 50, step: 2, unit: '' },
+  set_fader: { min: 0, max: 100, defaultValue: 80, step: 1, unit: '%' },
+  set_brightness: { min: 20, max: 100, defaultValue: 100, step: 1, unit: '%' }
+};
+
+export function getEffectiveSlotAction(slot, configuredAction) {
+  const options = ACTION_OPTIONS_BY_TYPE[slot.type] || [];
+  return options.some((option) => option.value === configuredAction)
+    ? configuredAction
+    : slot.action;
+}
+
+export function normalizeSlotMappings(slotMappings) {
+  Object.values(DECK_PRESETS).forEach((deck) => {
+    const deckMappings = slotMappings[deck.id];
+    if (!deckMappings || typeof deckMappings !== 'object') return;
+
+    deck.slots.forEach((slot) => {
+      const mapping = deckMappings[slot.id];
+      if (!mapping || !Object.prototype.hasOwnProperty.call(mapping, 'action')) return;
+      mapping.action = getEffectiveSlotAction(slot, mapping.action);
+    });
+  });
+  return slotMappings;
+}
+
+export function normalizeNumericSlotValue(slot, value) {
+  const numericValue = Number(value);
+  const fallbackValue = Number(slot.defaultValue);
+  const candidate = Number.isFinite(numericValue) ? numericValue : fallbackValue;
+  const clamped = Math.max(slot.min, Math.min(slot.max, candidate));
+  const step = slot.step || 1;
+  const snapped = slot.min + Math.round((clamped - slot.min) / step) * step;
+  const precision = Math.max(
+    String(slot.min).split('.')[1]?.length || 0,
+    String(slot.max).split('.')[1]?.length || 0,
+    String(step).split('.')[1]?.length || 0
+  );
+  return Number(Math.max(slot.min, Math.min(slot.max, snapped)).toFixed(precision));
+}
 
 /**
  * Retrieve deck preset by ID with optional custom slot mappings applied
@@ -410,9 +447,22 @@ export function getDeckPreset(deckId, customSlotMappings = {}) {
 
   const slots = basePreset.slots.map((slot) => {
     if (deckOverrides[slot.id]) {
+      const override = deckOverrides[slot.id];
+      const action = getEffectiveSlotAction(slot, override.action);
+      const numericProfile = slot.type === 'knob' || slot.type === 'fader'
+        ? ACTION_NUMERIC_PROFILES[action] || {
+          min: slot.min,
+          max: slot.max,
+          defaultValue: slot.defaultValue,
+          step: slot.step,
+          unit: slot.unit
+        }
+        : {};
       return {
         ...slot,
-        ...deckOverrides[slot.id]
+        ...override,
+        action,
+        ...numericProfile
       };
     }
     return { ...slot };

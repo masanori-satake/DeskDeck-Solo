@@ -25,6 +25,15 @@ const DEFAULT_URL_MAPPINGS = [
   { id: 'rule_spotify', pattern: 'spotify.com', deckId: 'audio', enabled: true }
 ];
 
+const BACKUP_VERSION = '1.0.0';
+const BACKUP_FIELD_VALIDATORS = {
+  activeDeck: (value) => typeof value === 'string',
+  settings: (value) => value !== null && typeof value === 'object' && !Array.isArray(value),
+  urlMappings: (value) => Array.isArray(value),
+  slotMappings: (value) => value !== null && typeof value === 'object' && !Array.isArray(value),
+  deckSlotStates: (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
+};
+
 // Fallback in-memory storage for non-browser Node test environments
 const memoryStorage = new Map();
 
@@ -267,7 +276,7 @@ export async function exportBackupData() {
   }
 
   return {
-    version: '1.0.0',
+    version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
     activeDeck,
     settings,
@@ -283,31 +292,48 @@ export async function exportBackupData() {
  * @returns {Promise<{success: boolean, error?: string}>}
  */
 export async function importBackupData(data) {
-  if (!data || typeof data !== 'object') {
+  const isObject = data !== null && typeof data === 'object' && !Array.isArray(data);
+  const restorationFields = isObject
+    ? Object.keys(BACKUP_FIELD_VALIDATORS).filter((field) => Object.hasOwn(data, field))
+    : [];
+
+  if (
+    !isObject ||
+    data.version !== BACKUP_VERSION ||
+    restorationFields.length === 0 ||
+    restorationFields.some((field) => !BACKUP_FIELD_VALIDATORS[field](data[field]))
+  ) {
     return { success: false, error: 'Invalid backup JSON data format' };
   }
 
   try {
-    if (data.settings && typeof data.settings === 'object') {
-      await saveSettings(data.settings);
-    }
-    if (Array.isArray(data.urlMappings)) {
-      await saveUrlMappings(data.urlMappings);
-    }
-    if (data.slotMappings && typeof data.slotMappings === 'object') {
-      await saveSlotMappings(data.slotMappings);
-    }
-    if (data.activeDeck && typeof data.activeDeck === 'string') {
-      await setActiveDeckId(data.activeDeck);
-    }
-    if (data.deckSlotStates && typeof data.deckSlotStates === 'object') {
-      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-        await new Promise((resolve) => {
-          chrome.storage.local.set({ [STORAGE_KEYS.DECK_SLOT_STATES]: data.deckSlotStates }, resolve);
+    const storageValues = {};
+    const storageKeyByField = {
+      activeDeck: STORAGE_KEYS.ACTIVE_DECK,
+      settings: STORAGE_KEYS.SETTINGS,
+      urlMappings: STORAGE_KEYS.URL_MAPPINGS,
+      slotMappings: STORAGE_KEYS.SLOT_MAPPINGS,
+      deckSlotStates: STORAGE_KEYS.DECK_SLOT_STATES
+    };
+    restorationFields.forEach((field) => {
+      storageValues[storageKeyByField[field]] = data[field];
+    });
+
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      await new Promise((resolve, reject) => {
+        chrome.storage.local.set(storageValues, () => {
+          const lastError = chrome.runtime && chrome.runtime.lastError;
+          if (lastError) {
+            reject(new Error(lastError.message || 'Failed to restore backup data'));
+          } else {
+            resolve();
+          }
         });
-      } else {
-        safeSetStorageItem(STORAGE_KEYS.DECK_SLOT_STATES, JSON.stringify(data.deckSlotStates));
-      }
+      });
+    } else {
+      Object.entries(storageValues).forEach(([key, value]) => {
+        safeSetStorageItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+      });
     }
     return { success: true };
   } catch (err) {

@@ -9,7 +9,8 @@ import {
 
 import {
   getDeckPreset,
-  getAvailableDecks
+  getAvailableDecks,
+  normalizeNumericSlotValue
 } from '../lib/deck-manager.js';
 
 import {
@@ -111,9 +112,12 @@ async function loadAndRenderActiveDeck(deckId) {
 
   currentSlotStates = {};
   currentDeckPreset.slots.forEach((slot) => {
-    currentSlotStates[slot.id] = storedStates[slot.id] !== undefined
+    const storedValue = storedStates[slot.id] !== undefined
       ? storedStates[slot.id]
       : slot.defaultValue;
+    currentSlotStates[slot.id] = slot.type === 'knob' || slot.type === 'fader'
+      ? normalizeNumericSlotValue(slot, storedValue)
+      : storedValue;
   });
 
   const titleElem = document.getElementById('activeDeckTitle');

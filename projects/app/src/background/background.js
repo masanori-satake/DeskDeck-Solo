@@ -47,18 +47,18 @@ getKeepAwakeStatus().then((isActive) => {
 export function matchUrlToDeck(urlStr, mappings) {
   if (!urlStr || !Array.isArray(mappings) || mappings.length === 0) return null;
 
-  let hostname = '';
+  let urlObj;
   try {
-    const urlObj = new URL(urlStr);
-    hostname = urlObj.hostname.toLowerCase();
+    urlObj = new URL(urlStr);
   } catch {
-    hostname = urlStr.toLowerCase();
-  }
-
-  // Ignore internal extension pages and chrome:// URLs
-  if (hostname.startsWith('chrome') || hostname === 'newtab' || !hostname) {
     return null;
   }
+
+  // Domain mappings apply only to web pages, never browser/extension URLs.
+  if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
+    return null;
+  }
+  const hostname = urlObj.hostname.toLowerCase();
 
   for (const rule of mappings) {
     if (!rule || !rule.enabled || !rule.pattern || !rule.deckId) continue;
@@ -66,12 +66,23 @@ export function matchUrlToDeck(urlStr, mappings) {
     const pattern = rule.pattern.trim().toLowerCase();
     if (!pattern) continue;
 
-    // Direct domain match or domain ends with pattern (e.g. sub.domain.com vs domain.com)
-    if (
-      hostname === pattern ||
-      hostname.endsWith('.' + pattern) ||
-      urlStr.toLowerCase().includes(pattern)
-    ) {
+    let patternHostname = '';
+    try {
+      // Full URLs are accepted for convenience, but only their hostname is a match rule.
+      if (/^[a-z][a-z\d+.-]*:\/\//i.test(pattern)) {
+        const patternUrl = new URL(pattern);
+        if (patternUrl.protocol !== 'http:' && patternUrl.protocol !== 'https:') continue;
+        patternHostname = patternUrl.hostname.toLowerCase();
+      } else {
+        if (/[/?#]/.test(pattern)) continue;
+        patternHostname = new URL(`http://${pattern.replace(/^\*\./, '')}`).hostname.toLowerCase();
+      }
+    } catch {
+      continue;
+    }
+
+    // Match the exact hostname or one of its subdomains, never the path/query string.
+    if (hostname === patternHostname || hostname.endsWith('.' + patternHostname)) {
       return rule.deckId;
     }
   }
@@ -82,36 +93,63 @@ export function matchUrlToDeck(urlStr, mappings) {
 /**
  * Check active tab URL and switch active deck if matched
  */
-async function checkAndSwitchDeckForTab(tab) {
-  if (!tab || !tab.url || !tab.active) return;
+let latestTabCheckGeneration = 0;
+let tabCheckQueue = Promise.resolve();
+
+async function checkAndSwitchDeckForTab(tab, generation) {
+  if (!tab || !tab.url || !tab.active || generation !== latestTabCheckGeneration) return;
 
   const mappings = await getUrlMappings();
-  const matchedDeckId = matchUrlToDeck(tab.url, mappings);
+  if (generation !== latestTabCheckGeneration) return;
 
-  if (matchedDeckId) {
-    const currentActiveDeckId = await getActiveDeckId();
-    if (matchedDeckId !== currentActiveDeckId) {
-      await setActiveDeckId(matchedDeckId);
-      // Notify sidepanel / runtime of automatic deck switch
-      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-        chrome.runtime.sendMessage({
-          action: 'SWITCH_DECK',
-          deckId: matchedDeckId,
-          sourceUrl: tab.url
-        }).catch(() => {
-          // Absorbed if side panel is closed
-        });
-      }
-    }
+  const currentActiveDeckId = await getActiveDeckId();
+  if (generation !== latestTabCheckGeneration) return;
+
+  // Re-read the active tab immediately before writing so stale URL/update work is discarded.
+  const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (
+    generation !== latestTabCheckGeneration ||
+    !activeTab ||
+    activeTab.id !== tab.id ||
+    activeTab.url !== tab.url
+  ) return;
+
+  const matchedDeckId = matchUrlToDeck(activeTab.url, mappings);
+  if (!matchedDeckId || matchedDeckId === currentActiveDeckId) return;
+
+  await setActiveDeckId(matchedDeckId);
+  // If a newer event arrived during the write, undo this stale result before processing it.
+  if (generation !== latestTabCheckGeneration) {
+    await setActiveDeckId(currentActiveDeckId);
+    return;
   }
+
+  // Notify sidepanel / runtime of automatic deck switch
+  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+    chrome.runtime.sendMessage({
+      action: 'SWITCH_DECK',
+      deckId: matchedDeckId,
+      sourceUrl: activeTab.url
+    }).catch(() => {
+      // Absorbed if side panel is closed
+    });
+  }
+}
+
+function queueTabCheck(tab, generation) {
+  tabCheckQueue = tabCheckQueue
+    .catch(() => {})
+    .then(() => checkAndSwitchDeckForTab(tab, generation));
+  return tabCheckQueue;
 }
 
 // Listen for tab activation changes
 if (typeof chrome !== 'undefined' && chrome.tabs) {
   chrome.tabs.onActivated.addListener(async (activeInfo) => {
+    const generation = ++latestTabCheckGeneration;
     try {
       const tab = await chrome.tabs.get(activeInfo.tabId);
-      await checkAndSwitchDeckForTab(tab);
+      await queueTabCheck(tab, generation);
     } catch {
       // ignore
     }
@@ -119,8 +157,9 @@ if (typeof chrome !== 'undefined' && chrome.tabs) {
 
   // Listen for tab URL updates
   chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-    if (changeInfo.status === 'complete' || changeInfo.url) {
-      await checkAndSwitchDeckForTab(tab);
+    if (tab.active && (changeInfo.status === 'complete' || changeInfo.url)) {
+      const generation = ++latestTabCheckGeneration;
+      await queueTabCheck(tab, generation);
     }
   });
 }
