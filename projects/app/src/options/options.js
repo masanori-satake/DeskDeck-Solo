@@ -6,28 +6,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const soundInput = document.getElementById('soundEffects');
   const hapticInput = document.getElementById('hapticFeedback');
+  const cancelBtn = document.getElementById('cancelBtn');
   const saveBtn = document.getElementById('saveBtn');
-  const saveStatus = document.getElementById('saveStatus');
 
   if (soundInput) soundInput.checked = settings.soundEffects;
   if (hapticInput) hapticInput.checked = settings.hapticFeedback;
 
-  saveBtn.addEventListener('click', async () => {
-    const newSettings = {
-      soundEffects: soundInput.checked,
-      hapticFeedback: hapticInput.checked,
-    };
-    await saveSettings(newSettings);
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', () => {
+      window.close();
+    });
+  }
 
-    const savedText =
-      typeof chrome !== 'undefined' && chrome.i18n
-        ? chrome.i18n.getMessage('saved') || 'Saved!'
-        : 'Saved!';
-    saveStatus.textContent = savedText;
-    setTimeout(() => {
-      saveStatus.textContent = '';
-    }, 2000);
-  });
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async () => {
+      const newSettings = {
+        soundEffects: soundInput ? soundInput.checked : true,
+        hapticFeedback: hapticInput ? hapticInput.checked : true,
+      };
+      await saveSettings(newSettings);
+      window.close();
+    });
+  }
 });
 
 function initI18n() {

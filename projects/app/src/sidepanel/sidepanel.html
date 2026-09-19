@@ -10,31 +10,19 @@
     <div id="deckApp" class="deck-app">
       <!-- Header Controls -->
       <header class="deck-header">
-        <div class="header-top">
-          <div class="brand-title">
-            <span class="brand-icon">🎛️</span>
-            <span class="brand-name">DeskDeck</span>
-          </div>
-          <button id="optionsBtn" class="icon-btn" aria-label="Settings" title="Settings">
-            ⚙️
-          </button>
-        </div>
-
-        <div class="deck-selector-wrapper">
+        <div class="deck-header-row">
           <label for="deckSelect" class="sr-only" data-i18n="deckSelectLabel">Select Deck</label>
           <select id="deckSelect" class="deck-select">
             <!-- Populated dynamically -->
           </select>
+          <button id="optionsBtn" class="icon-btn" aria-label="Settings" title="Settings">
+            <span class="material-symbols-outlined">settings</span>
+          </button>
         </div>
       </header>
 
       <!-- Main Active Deck Hardware Area -->
       <main class="deck-workspace">
-        <div id="deckTitleBar" class="deck-title-bar">
-          <h2 id="activeDeckTitle" class="active-deck-title">Media Deck</h2>
-          <span id="deckStatusBadge" class="status-badge">READY</span>
-        </div>
-
         <div id="slotsContainer" class="slots-grid">
           <!-- Hardware slots dynamically populated here -->
         </div>
@@ -42,10 +30,7 @@
 
       <!-- Deck Footer Status -->
       <footer class="deck-footer">
-        <div class="footer-info">
-          <span class="footer-mode">TABLET MODE</span>
-          <span class="footer-copy">© 2026 Masanori SATAKE</span>
-        </div>
+        <div class="footer-info"></div>
       </footer>
     </div>
 

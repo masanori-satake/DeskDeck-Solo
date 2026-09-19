@@ -122,15 +122,6 @@ async function loadAndRenderActiveDeck(deckId) {
       slotStates[slot.id] !== undefined ? slotStates[slot.id] : slot.defaultValue;
   });
 
-  const titleElem = document.getElementById('activeDeckTitle');
-  if (titleElem) {
-    const localizedTitle =
-      typeof chrome !== 'undefined' && chrome.i18n
-        ? chrome.i18n.getMessage(currentDeckPreset.nameKey) || currentDeckPreset.title
-        : currentDeckPreset.title;
-    titleElem.textContent = localizedTitle;
-  }
-
   renderDeckSlots(deckId);
 }
 
