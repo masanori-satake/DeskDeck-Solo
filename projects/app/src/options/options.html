@@ -1,38 +1,38 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DeskDeck-Solo Settings</title>
-  <link rel="stylesheet" href="options.css">
-</head>
-<body>
-  <div class="options-card">
-    <header class="header">
-      <div class="logo-area">
-        <span class="icon">🎛️</span>
-        <h1 data-i18n="optionsTitle">DeskDeck-Solo Settings</h1>
-      </div>
-    </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DeskDeck-Solo Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <div class="options-card">
+      <header class="header">
+        <div class="logo-area">
+          <span class="icon">🎛️</span>
+          <h1 data-i18n="optionsTitle">DeskDeck-Solo Settings</h1>
+        </div>
+      </header>
 
-    <main class="form-body">
-      <div class="setting-item">
-        <label for="soundEffects" data-i18n="soundEffects">Sound Feedback</label>
-        <input type="checkbox" id="soundEffects" class="toggle-checkbox" checked>
-      </div>
+      <main class="form-body">
+        <div class="setting-item">
+          <label for="soundEffects" data-i18n="soundEffects">Sound Feedback</label>
+          <input type="checkbox" id="soundEffects" class="toggle-checkbox" checked />
+        </div>
 
-      <div class="setting-item">
-        <label for="hapticFeedback" data-i18n="hapticFeedback">Haptic Feedback</label>
-        <input type="checkbox" id="hapticFeedback" class="toggle-checkbox" checked>
-      </div>
+        <div class="setting-item">
+          <label for="hapticFeedback" data-i18n="hapticFeedback">Haptic Feedback</label>
+          <input type="checkbox" id="hapticFeedback" class="toggle-checkbox" checked />
+        </div>
 
-      <div class="action-row">
-        <button id="saveBtn" class="btn-primary" data-i18n="save">Save</button>
-        <span id="saveStatus" class="status-msg"></span>
-      </div>
-    </main>
-  </div>
+        <div class="action-row">
+          <button id="saveBtn" class="btn-primary" data-i18n="save">Save</button>
+          <span id="saveStatus" class="status-msg"></span>
+        </div>
+      </main>
+    </div>
 
-  <script type="module" src="options.js"></script>
-</body>
+    <script type="module" src="options.js"></script>
+  </body>
 </html>

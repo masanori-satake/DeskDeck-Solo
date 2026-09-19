@@ -349,6 +349,6 @@
     toggleMute,
     nextTrack,
     prevTrack,
-    handleAction
+    handleAction,
   };
 })();

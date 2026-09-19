@@ -4,19 +4,16 @@ import {
   getDeckSlotStates,
   saveDeckSlotStates,
   getSettings,
-  getSlotMappings
+  getSlotMappings,
 } from '../lib/storage.js';
 
-import {
-  getDeckPreset,
-  getAvailableDecks
-} from '../lib/deck-manager.js';
+import { getDeckPreset, getAvailableDecks } from '../lib/deck-manager.js';
 
 import {
   playKnobTickSound,
   playSwitchSound,
   playButtonSound,
-  triggerHaptic
+  triggerHaptic,
 } from '../lib/audio.js';
 
 let activeDeckId = 'media';
@@ -71,9 +68,10 @@ function setupDeckSelector() {
   availableDecks.forEach((deck) => {
     const option = document.createElement('option');
     option.value = deck.id;
-    const localizedTitle = (typeof chrome !== 'undefined' && chrome.i18n)
-      ? chrome.i18n.getMessage(deck.nameKey) || deck.title
-      : deck.title;
+    const localizedTitle =
+      typeof chrome !== 'undefined' && chrome.i18n
+        ? chrome.i18n.getMessage(deck.nameKey) || deck.title
+        : deck.title;
     option.textContent = localizedTitle;
     selectElem.appendChild(option);
   });
@@ -120,16 +118,16 @@ async function loadAndRenderActiveDeck(deckId) {
   currentDeckPreset = deckPreset;
   currentSlotStates = {};
   currentDeckPreset.slots.forEach((slot) => {
-    currentSlotStates[slot.id] = slotStates[slot.id] !== undefined
-      ? slotStates[slot.id]
-      : slot.defaultValue;
+    currentSlotStates[slot.id] =
+      slotStates[slot.id] !== undefined ? slotStates[slot.id] : slot.defaultValue;
   });
 
   const titleElem = document.getElementById('activeDeckTitle');
   if (titleElem) {
-    const localizedTitle = (typeof chrome !== 'undefined' && chrome.i18n)
-      ? chrome.i18n.getMessage(currentDeckPreset.nameKey) || currentDeckPreset.title
-      : currentDeckPreset.title;
+    const localizedTitle =
+      typeof chrome !== 'undefined' && chrome.i18n
+        ? chrome.i18n.getMessage(currentDeckPreset.nameKey) || currentDeckPreset.title
+        : currentDeckPreset.title;
     titleElem.textContent = localizedTitle;
   }
 
@@ -180,10 +178,10 @@ function renderKnobWidget(cardContainer, slot, deckId) {
   dialWrapper.className = 'knob-dial-wrapper';
 
   // SVG Tick Marks Ring around Knob
-  const svgNS = "http://www.w3.org/2000/svg";
-  const svg = document.createElementNS(svgNS, "svg");
-  svg.setAttribute("class", "knob-ticks-svg");
-  svg.setAttribute("viewBox", "0 0 140 140");
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('class', 'knob-ticks-svg');
+  svg.setAttribute('viewBox', '0 0 140 140');
 
   const totalTicks = 21;
   const minAngleDeg = -135;
@@ -203,12 +201,12 @@ function renderKnobWidget(cardContainer, slot, deckId) {
     const x2 = 70 + outerR * Math.cos(angleRad);
     const y2 = 70 + outerR * Math.sin(angleRad);
 
-    const line = document.createElementNS(svgNS, "line");
-    line.setAttribute("x1", x1.toFixed(2));
-    line.setAttribute("y1", y1.toFixed(2));
-    line.setAttribute("x2", x2.toFixed(2));
-    line.setAttribute("y2", y2.toFixed(2));
-    line.setAttribute("class", `knob-tick ${isMajor ? 'major' : 'minor'}`);
+    const line = document.createElementNS(svgNS, 'line');
+    line.setAttribute('x1', x1.toFixed(2));
+    line.setAttribute('y1', y1.toFixed(2));
+    line.setAttribute('x2', x2.toFixed(2));
+    line.setAttribute('y2', y2.toFixed(2));
+    line.setAttribute('class', `knob-tick ${isMajor ? 'major' : 'minor'}`);
     svg.appendChild(line);
   }
 
@@ -238,7 +236,8 @@ function renderKnobWidget(cardContainer, slot, deckId) {
   container.appendChild(valueDisplay);
   cardContainer.appendChild(container);
 
-  let val = currentSlotStates[slot.id] !== undefined ? currentSlotStates[slot.id] : slot.defaultValue;
+  let val =
+    currentSlotStates[slot.id] !== undefined ? currentSlotStates[slot.id] : slot.defaultValue;
   let unroundedVal = val;
 
   const updateKnobUI = (value) => {
@@ -341,9 +340,12 @@ function renderKnobWidget(cardContainer, slot, deckId) {
   dial.addEventListener('pointerup', onPointerUp);
   dial.addEventListener('pointercancel', onPointerUp);
   dial.addEventListener('keydown', (e) => {
-    const direction = (e.key === 'ArrowUp' || e.key === 'ArrowRight')
-      ? 1
-      : (e.key === 'ArrowDown' || e.key === 'ArrowLeft') ? -1 : 0;
+    const direction =
+      e.key === 'ArrowUp' || e.key === 'ArrowRight'
+        ? 1
+        : e.key === 'ArrowDown' || e.key === 'ArrowLeft'
+          ? -1
+          : 0;
     if (!direction) return;
 
     e.preventDefault();
@@ -418,7 +420,8 @@ function renderFaderWidget(cardContainer, slot, deckId) {
   container.appendChild(valueDisplay);
   cardContainer.appendChild(container);
 
-  let val = currentSlotStates[slot.id] !== undefined ? currentSlotStates[slot.id] : slot.defaultValue;
+  let val =
+    currentSlotStates[slot.id] !== undefined ? currentSlotStates[slot.id] : slot.defaultValue;
 
   const updateFaderUI = (value) => {
     const min = slot.min;
@@ -499,9 +502,12 @@ function renderFaderWidget(cardContainer, slot, deckId) {
   trackWrapper.addEventListener('pointerup', onPointerUp);
   trackWrapper.addEventListener('pointercancel', onPointerUp);
   trackWrapper.addEventListener('keydown', (e) => {
-    const direction = (e.key === 'ArrowUp' || e.key === 'ArrowRight')
-      ? 1
-      : (e.key === 'ArrowDown' || e.key === 'ArrowLeft') ? -1 : 0;
+    const direction =
+      e.key === 'ArrowUp' || e.key === 'ArrowRight'
+        ? 1
+        : e.key === 'ArrowDown' || e.key === 'ArrowLeft'
+          ? -1
+          : 0;
     if (!direction) return;
 
     e.preventDefault();
@@ -651,7 +657,11 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
     base.setAttribute('aria-checked', String(newState));
 
     saveDeckSlotStates(deckId, currentSlotStates);
-    dispatchDeckAction(slot.action, { enabled: newState, protectedCover: true, fromFlipSwitch: true });
+    dispatchDeckAction(slot.action, {
+      enabled: newState,
+      protectedCover: true,
+      fromFlipSwitch: true,
+    });
 
     if (appSettings.soundEffects) playSwitchSound(newState);
     if (appSettings.hapticFeedback) triggerHaptic(20);
@@ -683,7 +693,7 @@ function renderMultiPadWidget(cardContainer, slot, deckId) {
     const padDef = (slot.pads && slot.pads[i]) || {
       id: `pad_${i + 1}`,
       label: `P${i + 1}`,
-      icon: is4x4 ? `${i + 1}` : ['▶', '⏸', '⏹', '🔁'][i] || `${i + 1}`
+      icon: is4x4 ? `${i + 1}` : ['▶', '⏸', '⏹', '🔁'][i] || `${i + 1}`,
     };
 
     const padBtn = document.createElement('button');
@@ -790,7 +800,7 @@ function renderSwitchWidget(cardContainer, slot, deckId) {
 /**
  * Render Action Button
  */
-function renderButtonWidget(cardContainer, slot, deckId) {
+function renderButtonWidget(cardContainer, slot, _deckId) {
   const btn = document.createElement('button');
   btn.className = `hw-button variant-${slot.variant || 'secondary'}`;
 
@@ -816,7 +826,7 @@ function renderButtonWidget(cardContainer, slot, deckId) {
 
 function dispatchDeckAction(action, payload) {
   if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-    chrome.runtime.sendMessage({ action, payload }, (response) => {
+    chrome.runtime.sendMessage({ action, payload }, (_response) => {
       if (chrome.runtime.lastError) {
         // Quietly absorb errors if background worker is sleeping
       }

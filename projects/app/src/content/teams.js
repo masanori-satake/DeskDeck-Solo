@@ -72,7 +72,7 @@
       observer.observe(document.body || document.documentElement, {
         childList: true,
         subtree: true,
-        attributes: true
+        attributes: true,
       });
 
       setTimeout(() => {
@@ -98,7 +98,7 @@
       'button[aria-label*="unmute"]',
       'button[aria-label*="マイク"]',
       'button[aria-label*="ミュート"]',
-      'button[data-is-muted]'
+      'button[data-is-muted]',
     ];
 
     const btn = findElement(selectors);
@@ -120,7 +120,7 @@
       'button[aria-label*="Camera"]',
       'button[aria-label*="camera"]',
       'button[aria-label*="カメラ"]',
-      'button[aria-label*="ビデオ"]'
+      'button[aria-label*="ビデオ"]',
     ];
 
     const btn = findElement(selectors);
@@ -143,7 +143,7 @@
       'button[aria-label*="Lower hand"]',
       'button[aria-label*="手を挙げる"]',
       'button[aria-label*="手を下ろす"]',
-      'button[aria-label*="挙手"]'
+      'button[aria-label*="挙手"]',
     ];
 
     const btn = findElement(selectors);
@@ -165,7 +165,7 @@
       'button[aria-label*="Reactions"]',
       'button[aria-label*="React"]',
       'button[aria-label*="リアクション"]',
-      'button[aria-label*="反応"]'
+      'button[aria-label*="反応"]',
     ];
 
     const trayBtn = findElement(traySelectors);
@@ -195,53 +195,53 @@
         'button[data-tid*="applause"]',
         'button[aria-label*="applause"]',
         'button[aria-label*="拍手"]',
-        'button[aria-label*="Clap"]'
+        'button[aria-label*="Clap"]',
       ],
       clap: [
         'button[data-tid*="applause"]',
         'button[aria-label*="applause"]',
         'button[aria-label*="拍手"]',
-        'button[aria-label*="Clap"]'
+        'button[aria-label*="Clap"]',
       ],
       thumbsup: [
         'button[data-tid*="like"]',
         'button[aria-label*="like"]',
         'button[aria-label*="いいね"]',
-        'button[aria-label*="Thumbs"]'
+        'button[aria-label*="Thumbs"]',
       ],
       like: [
         'button[data-tid*="like"]',
         'button[aria-label*="like"]',
         'button[aria-label*="いいね"]',
-        'button[aria-label*="Thumbs"]'
+        'button[aria-label*="Thumbs"]',
       ],
       heart: [
         'button[data-tid*="heart"]',
         'button[aria-label*="heart"]',
         'button[aria-label*="ハート"]',
-        'button[aria-label*="Love"]'
+        'button[aria-label*="Love"]',
       ],
       love: [
         'button[data-tid*="heart"]',
         'button[aria-label*="heart"]',
         'button[aria-label*="ハート"]',
-        'button[aria-label*="Love"]'
+        'button[aria-label*="Love"]',
       ],
       laugh: [
         'button[data-tid*="laugh"]',
         'button[aria-label*="laugh"]',
-        'button[aria-label*="笑い"]'
+        'button[aria-label*="笑い"]',
       ],
       surprised: [
         'button[data-tid*="surprised"]',
         'button[aria-label*="surprised"]',
-        'button[aria-label*="驚き"]'
-      ]
+        'button[aria-label*="驚き"]',
+      ],
     };
 
     const targetSelectors = reactionSelectorsMap[lowerType] || [
       `button[aria-label*="${type}"]`,
-      `button[data-tid*="${type}"]`
+      `button[data-tid*="${type}"]`,
     ];
 
     // 1. Try finding reaction button directly
@@ -289,7 +289,9 @@
    */
   function leaveCall(payload) {
     if (!isProtectedCoverInput(payload)) {
-      console.warn('DeskDeck Teams: leave_call ignored - protective cover switch input required for safe exit');
+      console.warn(
+        'DeskDeck Teams: leave_call ignored - protective cover switch input required for safe exit'
+      );
       return false;
     }
 
@@ -301,7 +303,7 @@
       'button[aria-label*="Hang up"]',
       'button[aria-label*="退出"]',
       'button[aria-label*="通話の終了"]',
-      'button[aria-label*="切断"]'
+      'button[aria-label*="切断"]',
     ];
 
     const btn = findElement(selectors);
@@ -366,6 +368,6 @@
     sendReaction,
     leaveCall,
     isProtectedCoverInput,
-    handleAction
+    handleAction,
   };
 })();
