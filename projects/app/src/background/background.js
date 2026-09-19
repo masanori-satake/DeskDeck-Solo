@@ -10,14 +10,22 @@ import {
   setTabBrightness
 } from '../lib/system.js';
 
+import {
+  getActiveDeckId,
+  setActiveDeckId,
+  getUrlMappings
+} from '../lib/storage.js';
+
 // Enable side panel to open on extension icon click
-chrome.runtime.onInstalled.addListener(() => {
-  if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
-    chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((err) => {
-      console.warn('Side panel behavior set error:', err);
-    });
-  }
-});
+if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onInstalled) {
+  chrome.runtime.onInstalled.addListener(() => {
+    if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
+      chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((err) => {
+        console.warn('Side panel behavior set error:', err);
+      });
+    }
+  });
+}
 
 // Restore keep awake state if persisted across Service Worker restarts
 getKeepAwakeStatus().then((isActive) => {
@@ -30,22 +38,115 @@ getKeepAwakeStatus().then((isActive) => {
   }
 });
 
+/**
+ * Match URL string against domain patterns/rules
+ * @param {string} urlStr
+ * @param {Array<{id: string, pattern: string, deckId: string, enabled: boolean}>} mappings
+ * @returns {string|null} Matched deckId or null
+ */
+export function matchUrlToDeck(urlStr, mappings) {
+  if (!urlStr || !Array.isArray(mappings) || mappings.length === 0) return null;
+
+  let hostname = '';
+  try {
+    const urlObj = new URL(urlStr);
+    hostname = urlObj.hostname.toLowerCase();
+  } catch {
+    hostname = urlStr.toLowerCase();
+  }
+
+  // Ignore internal extension pages and chrome:// URLs
+  if (hostname.startsWith('chrome') || hostname === 'newtab' || !hostname) {
+    return null;
+  }
+
+  for (const rule of mappings) {
+    if (!rule || !rule.enabled || !rule.pattern || !rule.deckId) continue;
+
+    const pattern = rule.pattern.trim().toLowerCase();
+    if (!pattern) continue;
+
+    // Direct domain match or domain ends with pattern (e.g. sub.domain.com vs domain.com)
+    if (
+      hostname === pattern ||
+      hostname.endsWith('.' + pattern) ||
+      urlStr.toLowerCase().includes(pattern)
+    ) {
+      return rule.deckId;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Check active tab URL and switch active deck if matched
+ */
+async function checkAndSwitchDeckForTab(tab) {
+  if (!tab || !tab.url || !tab.active) return;
+
+  const mappings = await getUrlMappings();
+  const matchedDeckId = matchUrlToDeck(tab.url, mappings);
+
+  if (matchedDeckId) {
+    const currentActiveDeckId = await getActiveDeckId();
+    if (matchedDeckId !== currentActiveDeckId) {
+      await setActiveDeckId(matchedDeckId);
+      // Notify sidepanel / runtime of automatic deck switch
+      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        chrome.runtime.sendMessage({
+          action: 'SWITCH_DECK',
+          deckId: matchedDeckId,
+          sourceUrl: tab.url
+        }).catch(() => {
+          // Absorbed if side panel is closed
+        });
+      }
+    }
+  }
+}
+
+// Listen for tab activation changes
+if (typeof chrome !== 'undefined' && chrome.tabs) {
+  chrome.tabs.onActivated.addListener(async (activeInfo) => {
+    try {
+      const tab = await chrome.tabs.get(activeInfo.tabId);
+      await checkAndSwitchDeckForTab(tab);
+    } catch {
+      // ignore
+    }
+  });
+
+  // Listen for tab URL updates
+  chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+    if (changeInfo.status === 'complete' || changeInfo.url) {
+      await checkAndSwitchDeckForTab(tab);
+    }
+  });
+}
+
 // Message listener for deck actions
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (!message || !message.action) return false;
+if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (!message || !message.action) return false;
 
-  handleDeckAction(message)
-    .then((result) => sendResponse({ success: true, result }))
-    .catch((error) => sendResponse({ success: false, error: error.message }));
+    handleDeckAction(message)
+      .then((result) => sendResponse({ success: true, result }))
+      .catch((error) => sendResponse({ success: false, error: error.message }));
 
-  return true; // Keep channel open for async response
-});
+    return true; // Keep channel open for async response
+  });
+}
 
 /**
  * Handle incoming deck hardware actions
  */
 async function handleDeckAction(message) {
   const { action, payload } = message;
+
+  if (typeof chrome === 'undefined' || !chrome.tabs) {
+    return { success: true };
+  }
 
   const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
 

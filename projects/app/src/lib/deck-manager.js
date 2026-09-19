@@ -348,12 +348,80 @@ export const DECK_PRESETS = {
 };
 
 /**
- * Retrieve deck preset by ID
+ * Available action options for UI dropdown customizer per slot type
+ */
+export const ACTION_OPTIONS_BY_TYPE = {
+  knob: [
+    { value: 'set_volume', label: 'Master Volume (0-100%)' },
+    { value: 'set_speed', label: 'Playback Speed (0.25x - 3.0x)' },
+    { value: 'seek_dial', label: 'Jog Dial Seek' },
+    { value: 'set_mic_level', label: 'Mic Gain' },
+    { value: 'set_zoom', label: 'Zoom Dial (50-200%)' },
+    { value: 'set_master_gain', label: 'Master Gain' },
+    { value: 'scroll_dial', label: 'Scroll Wheel Dial' }
+  ],
+  fader: [
+    { value: 'set_fader', label: 'Playback Fader' },
+    { value: 'set_stream_level', label: 'Stream Level' },
+    { value: 'set_brightness', label: 'Brightness Dimmer' },
+    { value: 'set_channel_fader', label: 'PA Channel Fader' },
+    { value: 'set_scroll_speed', label: 'Scroll Speed' }
+  ],
+  switch: [
+    { value: 'toggle_mute', label: 'Soft Mute' },
+    { value: 'toggle_camera', label: 'Camera On / Off' },
+    { value: 'toggle_dark_reader', label: 'Dark Theme Toggle' },
+    { value: 'toggle_master_mute', label: 'Master Mute All' },
+    { value: 'toggle_keep_awake', label: 'Keep Awake Switch' }
+  ],
+  flip_switch: [
+    { value: 'toggle_emergency_cut', label: 'Emergency Guard Switch' },
+    { value: 'toggle_contrast_lock', label: 'High Contrast Guard' }
+  ],
+  button: [
+    { value: 'toggle_pip', label: 'Picture-in-Picture' },
+    { value: 'toggle_fullscreen', label: 'Toggle Fullscreen' },
+    { value: 'leave_call', label: 'Leave Call / Exit' },
+    { value: 'toggle_reader_mode', label: 'Reader View' },
+    { value: 'reset_audio_eq', label: 'Reset Audio EQ' },
+    { value: 'mute_background_tabs', label: 'Mute Background Tabs' },
+    { value: 'bookmark_page', label: 'Bookmark Page' }
+  ],
+  pad2x2: [
+    { value: 'pad_action', label: 'Transport Pad (Play/Pause/Prev/Next)' },
+    { value: 'pad_reaction', label: 'Reactions Pad (Hand/Clap/Like/Love)' },
+    { value: 'pad_nav', label: 'Navigation Pad (Top/PgUp/PgDn/Bot)' },
+    { value: 'pad_tab', label: 'Tab Control Pad (New/Close/Prev/Next)' }
+  ],
+  pad4x4: [
+    { value: 'soundboard_trigger', label: '16-Pad Soundboard FX' }
+  ]
+};
+
+/**
+ * Retrieve deck preset by ID with optional custom slot mappings applied
  * @param {string} deckId
+ * @param {Object} [customSlotMappings] Custom action overrides
  * @returns {Object}
  */
-export function getDeckPreset(deckId) {
-  return DECK_PRESETS[deckId] || DECK_PRESETS.media;
+export function getDeckPreset(deckId, customSlotMappings = {}) {
+  const basePreset = DECK_PRESETS[deckId] || DECK_PRESETS.media;
+  const deckOverrides = customSlotMappings[deckId] || {};
+
+  const slots = basePreset.slots.map((slot) => {
+    if (deckOverrides[slot.id]) {
+      return {
+        ...slot,
+        ...deckOverrides[slot.id]
+      };
+    }
+    return { ...slot };
+  });
+
+  return {
+    ...basePreset,
+    slots
+  };
 }
 
 /**

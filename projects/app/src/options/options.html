@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
-  <div class="options-card">
+  <div class="options-container">
     <header class="header">
       <div class="logo-area">
         <span class="icon">🎛️</span>
@@ -16,18 +16,80 @@
     </header>
 
     <main class="form-body">
-      <div class="setting-item">
-        <label for="soundEffects" data-i18n="soundEffects">Sound Feedback</label>
-        <input type="checkbox" id="soundEffects" class="toggle-checkbox" checked>
-      </div>
+      <!-- Section 1: Sound & Haptics General Settings -->
+      <section class="section-card">
+        <h2 class="section-title" data-i18n="generalSettingsTitle">General Feedback Settings</h2>
+        <div class="setting-item">
+          <label for="soundEffects" data-i18n="soundEffects">Sound Feedback</label>
+          <input type="checkbox" id="soundEffects" class="toggle-checkbox" checked>
+        </div>
+        <div class="setting-item">
+          <label for="hapticFeedback" data-i18n="hapticFeedback">Haptic Feedback</label>
+          <input type="checkbox" id="hapticFeedback" class="toggle-checkbox" checked>
+        </div>
+      </section>
 
-      <div class="setting-item">
-        <label for="hapticFeedback" data-i18n="hapticFeedback">Haptic Feedback</label>
-        <input type="checkbox" id="hapticFeedback" class="toggle-checkbox" checked>
-      </div>
+      <!-- Section 2: Deck Slot Parameter Assignment Editor -->
+      <section class="section-card">
+        <h2 class="section-title" data-i18n="slotMappingTitle">Preset Slot Parameter Assignments</h2>
+        <p class="section-desc" data-i18n="slotMappingDesc">Customize action parameter assignments for each hardware slot on preset decks.</p>
 
+        <div class="form-group">
+          <label for="deckSelectEdit" data-i18n="selectDeckToEdit">Select Deck to Edit:</label>
+          <select id="deckSelectEdit" class="select-input"></select>
+        </div>
+
+        <div id="slotEditorContainer" class="slot-editor-grid">
+          <!-- Dynamically populated slot assignment dropdowns -->
+        </div>
+      </section>
+
+      <!-- Section 3: URL Pattern & Deck Mapping Table -->
+      <section class="section-card">
+        <h2 class="section-title" data-i18n="urlMappingTitle">URL Auto-Switch Rules</h2>
+        <p class="section-desc" data-i18n="urlMappingDesc">Automatically switch active deck when matching website domain is active in Chrome tabs.</p>
+
+        <div class="table-wrapper">
+          <table id="urlMappingTable" class="mapping-table">
+            <thead>
+              <tr>
+                <th data-i18n="thUrlPattern">Domain / URL Pattern</th>
+                <th data-i18n="thTargetDeck">Target Deck</th>
+                <th data-i18n="thEnable">Enabled</th>
+                <th data-i18n="thAction">Action</th>
+              </tr>
+            </thead>
+            <tbody id="urlMappingTbody">
+              <!-- Dynamically populated URL mapping rows -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="add-rule-form">
+          <input type="text" id="newPatternInput" class="text-input" placeholder="e.g. youtube.com, meet.google.com" data-i18n-placeholder="patternPlaceholder">
+          <select id="newDeckSelect" class="select-input"></select>
+          <button id="addRuleBtn" class="btn-secondary" data-i18n="addRule">Add Rule</button>
+        </div>
+      </section>
+
+      <!-- Section 4: JSON Backup & Restore -->
+      <section class="section-card">
+        <h2 class="section-title" data-i18n="backupTitle">Backup & Restore Settings</h2>
+        <p class="section-desc" data-i18n="backupDesc">Export all configurations as JSON file or restore from a previously exported JSON backup.</p>
+
+        <div class="backup-actions">
+          <button id="exportJsonBtn" class="btn-secondary" data-i18n="exportJson">📥 Export Settings (JSON)</button>
+
+          <label for="importJsonFile" class="btn-secondary file-upload-label" data-i18n="importJson">
+            📤 Import Settings (JSON)
+            <input type="file" id="importJsonFile" accept=".json" style="display:none;">
+          </label>
+        </div>
+      </section>
+
+      <!-- Bottom Save Action Row -->
       <div class="action-row">
-        <button id="saveBtn" class="btn-primary" data-i18n="save">Save</button>
+        <button id="saveBtn" class="btn-primary" data-i18n="save">Save All Settings</button>
         <span id="saveStatus" class="status-msg"></span>
       </div>
     </main>

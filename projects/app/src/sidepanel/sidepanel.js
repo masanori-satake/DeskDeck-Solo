@@ -3,7 +3,8 @@ import {
   setActiveDeckId,
   getDeckSlotStates,
   saveDeckSlotStates,
-  getSettings
+  getSettings,
+  getSlotMappings
 } from '../lib/storage.js';
 
 import {
@@ -30,6 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   activeDeckId = await getActiveDeckId();
   setupDeckSelector();
   setupOptionsButton();
+  setupRuntimeMessageListener();
 
   await loadAndRenderActiveDeck(activeDeckId);
 });
@@ -84,8 +86,27 @@ function setupDeckSelector() {
   });
 }
 
+function setupRuntimeMessageListener() {
+  if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.onMessage) return;
+
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message && (message.action === 'SWITCH_DECK' || message.action === 'ACTIVE_DECK_CHANGED')) {
+      const newDeckId = message.deckId || message.payload?.deckId;
+      if (newDeckId && newDeckId !== activeDeckId) {
+        activeDeckId = newDeckId;
+        const selectElem = document.getElementById('deckSelect');
+        if (selectElem) {
+          selectElem.value = activeDeckId;
+        }
+        loadAndRenderActiveDeck(activeDeckId);
+      }
+    }
+  });
+}
+
 async function loadAndRenderActiveDeck(deckId) {
-  currentDeckPreset = getDeckPreset(deckId);
+  const slotMappings = await getSlotMappings();
+  currentDeckPreset = getDeckPreset(deckId, slotMappings);
   const storedStates = await getDeckSlotStates(deckId) || {};
 
   currentSlotStates = {};
