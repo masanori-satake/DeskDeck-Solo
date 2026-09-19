@@ -3,7 +3,8 @@ import {
   setActiveDeckId,
   getDeckSlotStates,
   saveDeckSlotStates,
-  getSettings
+  getSettings,
+  getSlotMappings
 } from '../lib/storage.js';
 
 import {
@@ -22,6 +23,7 @@ let activeDeckId = 'media';
 let currentDeckPreset = null;
 let currentSlotStates = {};
 let appSettings = { soundEffects: true, hapticFeedback: true };
+let currentRenderGen = 0;
 
 document.addEventListener('DOMContentLoaded', async () => {
   initI18n();
@@ -30,6 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   activeDeckId = await getActiveDeckId();
   setupDeckSelector();
   setupOptionsButton();
+  setupRuntimeMessageListener();
 
   await loadAndRenderActiveDeck(activeDeckId);
 });
@@ -84,14 +87,41 @@ function setupDeckSelector() {
   });
 }
 
-async function loadAndRenderActiveDeck(deckId) {
-  currentDeckPreset = getDeckPreset(deckId);
-  const storedStates = await getDeckSlotStates(deckId) || {};
+function setupRuntimeMessageListener() {
+  if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.onMessage) return;
 
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message && (message.action === 'SWITCH_DECK' || message.action === 'ACTIVE_DECK_CHANGED')) {
+      const newDeckId = message.deckId || message.payload?.deckId;
+      if (newDeckId && newDeckId !== activeDeckId) {
+        activeDeckId = newDeckId;
+        const selectElem = document.getElementById('deckSelect');
+        if (selectElem) {
+          selectElem.value = activeDeckId;
+        }
+        loadAndRenderActiveDeck(activeDeckId);
+      }
+    }
+  });
+}
+
+async function loadAndRenderActiveDeck(deckId) {
+  const renderGen = ++currentRenderGen;
+
+  const slotMappings = await getSlotMappings();
+  if (renderGen !== currentRenderGen) return;
+
+  const storedStates = await getDeckSlotStates(deckId);
+  if (renderGen !== currentRenderGen) return;
+
+  const deckPreset = getDeckPreset(deckId, slotMappings);
+  const slotStates = storedStates || {};
+
+  currentDeckPreset = deckPreset;
   currentSlotStates = {};
   currentDeckPreset.slots.forEach((slot) => {
-    currentSlotStates[slot.id] = storedStates[slot.id] !== undefined
-      ? storedStates[slot.id]
+    currentSlotStates[slot.id] = slotStates[slot.id] !== undefined
+      ? slotStates[slot.id]
       : slot.defaultValue;
   });
 
@@ -103,10 +133,10 @@ async function loadAndRenderActiveDeck(deckId) {
     titleElem.textContent = localizedTitle;
   }
 
-  renderDeckSlots();
+  renderDeckSlots(deckId);
 }
 
-function renderDeckSlots() {
+function renderDeckSlots(deckId) {
   const container = document.getElementById('slotsContainer');
   if (!container || !currentDeckPreset) return;
 
@@ -122,17 +152,17 @@ function renderDeckSlots() {
     card.appendChild(label);
 
     if (slot.type === 'knob') {
-      renderKnobWidget(card, slot);
+      renderKnobWidget(card, slot, deckId);
     } else if (slot.type === 'fader') {
-      renderFaderWidget(card, slot);
+      renderFaderWidget(card, slot, deckId);
     } else if (slot.type === 'switch') {
-      renderSwitchWidget(card, slot);
+      renderSwitchWidget(card, slot, deckId);
     } else if (slot.type === 'flip_switch') {
-      renderFlipSwitchWidget(card, slot);
+      renderFlipSwitchWidget(card, slot, deckId);
     } else if (slot.type === 'pad2x2' || slot.type === 'pad4x4') {
-      renderMultiPadWidget(card, slot);
+      renderMultiPadWidget(card, slot, deckId);
     } else if (slot.type === 'button') {
-      renderButtonWidget(card, slot);
+      renderButtonWidget(card, slot, deckId);
     }
 
     container.appendChild(card);
@@ -142,7 +172,7 @@ function renderDeckSlots() {
 /**
  * Render Large Rotary Knob with Circular Pointer Events (Polar Drag Angle Calculation)
  */
-function renderKnobWidget(cardContainer, slot) {
+function renderKnobWidget(cardContainer, slot, deckId) {
   const container = document.createElement('div');
   container.className = 'knob-container';
 
@@ -239,7 +269,7 @@ function renderKnobWidget(cardContainer, slot) {
     val = newVal;
     currentSlotStates[slot.id] = val;
     updateKnobUI(val);
-    saveDeckSlotStates(activeDeckId, currentSlotStates);
+    saveDeckSlotStates(deckId, currentSlotStates);
     dispatchDeckAction(slot.action, { value: val });
 
     if (appSettings.soundEffects) playKnobTickSound();
@@ -327,7 +357,7 @@ function renderKnobWidget(cardContainer, slot) {
 /**
  * Render Large PA Mixer Fader Widget with Vertical Pointer Events Drag
  */
-function renderFaderWidget(cardContainer, slot) {
+function renderFaderWidget(cardContainer, slot, deckId) {
   const container = document.createElement('div');
   container.className = 'fader-container';
 
@@ -411,7 +441,7 @@ function renderFaderWidget(cardContainer, slot) {
     val = newVal;
     currentSlotStates[slot.id] = val;
     updateFaderUI(val);
-    saveDeckSlotStates(activeDeckId, currentSlotStates);
+    saveDeckSlotStates(deckId, currentSlotStates);
     dispatchDeckAction(slot.action, { value: val });
 
     if (appSettings.soundEffects) playKnobTickSound();
@@ -484,7 +514,7 @@ function renderFaderWidget(cardContainer, slot) {
 /**
  * Render Protective Flip Switch with 2-Step Upward Swipe & Tap Interaction
  */
-function renderFlipSwitchWidget(cardContainer, slot) {
+function renderFlipSwitchWidget(cardContainer, slot, deckId) {
   const wrapper = document.createElement('div');
   wrapper.className = 'flip-switch-container';
 
@@ -620,7 +650,7 @@ function renderFlipSwitchWidget(cardContainer, slot) {
     }
     base.setAttribute('aria-checked', String(newState));
 
-    saveDeckSlotStates(activeDeckId, currentSlotStates);
+    saveDeckSlotStates(deckId, currentSlotStates);
     dispatchDeckAction(slot.action, { enabled: newState, protectedCover: true, fromFlipSwitch: true });
 
     if (appSettings.soundEffects) playSwitchSound(newState);
@@ -638,7 +668,7 @@ function renderFlipSwitchWidget(cardContainer, slot) {
 /**
  * Render 2x2 or 4x4 Multi-Pad Grid with 3D Tactile Press-Down Animation
  */
-function renderMultiPadWidget(cardContainer, slot) {
+function renderMultiPadWidget(cardContainer, slot, deckId) {
   const is4x4 = slot.type === 'pad4x4';
   const gridCount = is4x4 ? 16 : 4;
   const cols = is4x4 ? 4 : 2;
@@ -702,7 +732,7 @@ function renderMultiPadWidget(cardContainer, slot) {
       }
       padBtn.setAttribute('aria-pressed', String(activeState));
 
-      saveDeckSlotStates(activeDeckId, currentSlotStates);
+      saveDeckSlotStates(deckId, currentSlotStates);
       dispatchDeckAction(slot.action, { padId: padDef.id, index: i, active: activeState });
 
       if (appSettings.soundEffects) playButtonSound();
@@ -718,7 +748,7 @@ function renderMultiPadWidget(cardContainer, slot) {
 /**
  * Render Toggle Switch
  */
-function renderSwitchWidget(cardContainer, slot) {
+function renderSwitchWidget(cardContainer, slot, deckId) {
   const wrapper = document.createElement('div');
   wrapper.className = 'switch-wrapper';
 
@@ -749,7 +779,7 @@ function renderSwitchWidget(cardContainer, slot) {
       statusLabel.textContent = 'OFF';
     }
 
-    saveDeckSlotStates(activeDeckId, currentSlotStates);
+    saveDeckSlotStates(deckId, currentSlotStates);
     dispatchDeckAction(slot.action, { enabled: newState });
 
     if (appSettings.soundEffects) playSwitchSound(newState);
@@ -760,7 +790,7 @@ function renderSwitchWidget(cardContainer, slot) {
 /**
  * Render Action Button
  */
-function renderButtonWidget(cardContainer, slot) {
+function renderButtonWidget(cardContainer, slot, deckId) {
   const btn = document.createElement('button');
   btn.className = `hw-button variant-${slot.variant || 'secondary'}`;
 
