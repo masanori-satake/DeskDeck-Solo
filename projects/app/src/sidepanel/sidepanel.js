@@ -103,6 +103,12 @@ function setupRuntimeMessageListener() {
   });
 }
 
+/**
+ * Load the selected deck's saved state and render it if the request is still current.
+ *
+ * @param {string} deckId - Identifier of the deck to load and render.
+ * @returns {Promise<void>} A promise that resolves after the current deck is rendered.
+ */
 async function loadAndRenderActiveDeck(deckId) {
   const renderGen = ++currentRenderGen;
 
