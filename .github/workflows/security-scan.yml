@@ -1,16 +1,8 @@
-name: 'セキュリティ脆弱性スキャン (Security Vulnerability Scan)'
+name: 'セキュリティスキャン (Security Scan)'
 
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - 'docs/**'
-      - 'README.md'
-      - 'AGENTS.md'
-      - 'PRIVACY.md'
-      - 'SECURITY.md'
-      - 'LICENSE'
-      - 'privacy.html'
   pull_request:
     branches: [main]
     paths:
@@ -19,7 +11,8 @@ on:
       - 'package-lock.json'
       - '.github/workflows/security-scan.yml'
   schedule:
-    - cron: '0 0 * * 0' # Weekly on Sundays at midnight UTC
+    - cron: '0 0 * * 0' # 毎週日曜 0:00 UTC
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -31,11 +24,7 @@ permissions:
   contents: read
 
 jobs:
-  osv-scan:
-    name: 'OSV Vulnerability Scan (脆弱性検査)'
-    uses: 'google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc' # v2.6.0
-    with:
-      scan-args: |-
-        --recursive
-        ./projects
-        ./package.json
+  security:
+    name: '共通セキュリティスキャン実行 (Execute Base Security)'
+    uses: masanori-satake/common-workflows/.github/workflows/base-security.yml@v1
+    # npm audit / OSV-Scanner の統一パラメータは base 側に閉じ込められているため with: は不要。

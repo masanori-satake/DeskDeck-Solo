@@ -1,99 +1,24 @@
-name: '自動リリース・パッケージング (Automated Release)'
+name: 'リリースパッケージ公開 (Release Package)'
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: write
-
 jobs:
   release:
-    name: 'リリースパッケージ作成・公開 (Create & Publish Release)'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    steps:
-      - name: 'リポジトリのチェックアウト (Checkout Repository)'
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          fetch-depth: 0
-
-      - name: 'Node.js環境と依存関係のセットアップ (Setup Node.js & Dependencies)'
-        uses: ./.github/actions/setup-node-deps
-        with:
-          node-version: '24'
-
-      - name: 'バージョン情報の抽出 (Extract Version)'
-        id: get_version
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Extracted version: $VERSION"
-
-      - name: '既存Gitタグの存在チェック (Check if Git Tag Exists)'
-        id: check_tag
-        run: |
-          TAG_NAME="v${VERSION}"
-          if git rev-parse "$TAG_NAME" >/dev/null 2>&1 || git ls-remote --tags origin "$TAG_NAME" | grep -q "$TAG_NAME"; then
-            echo "Tag $TAG_NAME already exists. Skipping release."
-            echo "exists=true" >> $GITHUB_ENV
-          else
-            echo "Tag $TAG_NAME does not exist. Proceeding with release creation."
-            echo "exists=false" >> $GITHUB_ENV
-          fi
-
-      - name: 'リリース用ZIPアーカイブの作成 (Package Release ZIP Archive)'
-        if: env.exists == 'false'
-        run: |
-          ZIP_NAME="DeskDeck-Solo-v${VERSION}.zip"
-          cd projects/app
-          zip -r "../../${ZIP_NAME}" .
-          cd ../..
-          echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
-
-      - name: 'GitHub リリースの作成 (Create GitHub Release with Retry)'
-        if: env.exists == 'false'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG_NAME="v${VERSION}"
-          MAX_RETRIES=5
-          RETRY_COUNT=0
-          DELAY=5
-
-          echo "Creating GitHub release for tag ${TAG_NAME}..."
-
-          until gh release create "${TAG_NAME}" "${ZIP_NAME}" \
-            --title "DeskDeck-Solo ${TAG_NAME}" \
-            --notes "Automated release ${TAG_NAME} for DeskDeck-Solo." \
-            --target "${GITHUB_SHA}"; do
-            RETRY_COUNT=$((RETRY_COUNT + 1))
-            if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
-              echo "Failed to create GitHub release after $MAX_RETRIES attempts."
-              exit 1
-            fi
-            echo "Release upload failed. Retrying in ${DELAY} seconds... (Attempt $RETRY_COUNT / $MAX_RETRIES)"
-            sleep $DELAY
-            DELAY=$((DELAY * 2))
-          done
-
-          echo "GitHub Release ${TAG_NAME} created successfully!"
-
-      - name: '実行サマリーの出力 (Generate Execution Summary)'
-        run: |
-          echo "### 🚀 リリース処理サマリー (Release Summary)" >> $GITHUB_STEP_SUMMARY
-          echo "| 項目 (Item) | 値 (Value) |" >> $GITHUB_STEP_SUMMARY
-          echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
-          echo "| **対象バージョン (Version)** | \`v${VERSION}\` |" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ env.exists }}" = "true" ]; then
-            echo "| **ステータス (Status)** | ⏩ スキップ (タグ \`v${VERSION}\` は既に存在します) |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "| **ステータス (Status)** | 🎉 作成完了 (Release created successfully) |" >> $GITHUB_STEP_SUMMARY
-            echo "| **パッケージファイル (ZIP)** | \`${ZIP_NAME}\` |" >> $GITHUB_STEP_SUMMARY
-          fi
+    name: '共通リリース処理実行 (Execute Base Release)'
+    uses: masanori-satake/common-workflows/.github/workflows/base-release.yml@v1
+    permissions:
+      contents: write
+    with:
+      # リリース ZIP は base-release 側で {リポジトリ名}-v{version}.zip に統一生成する（方式A）。
+      package_source_dir: 'projects/app'
+    # アイコン(PNG)は projects/app/icons に事前コミット済みのため generate_icons は使わない（SVG/生成なし）。
+    # マニフェストは projects/app/manifest.json のためリネーム不要。
+    # 旧 push:main トリガーの自動リリースは廃止し、タグ(v*.*.*) push トリガーに統一した。
