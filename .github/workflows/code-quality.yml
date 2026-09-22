@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -14,34 +15,14 @@ permissions:
   contents: read
 
 jobs:
-  validate:
-    name: 'コード品質・テスト検証 (Validate Code & Tests)'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: 'リポジトリのチェックアウト (Checkout Repository)'
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: 'Node.js環境と依存関係のセットアップ (Setup Node.js & Dependencies)'
-        uses: ./.github/actions/setup-node-deps
-        with:
-          node-version: '24'
-
-      - name: 'ESLint コード検証 (Run ESLint)'
-        run: npx eslint .
-
-      - name: 'Prettier フォーマットチェック (Run Prettier Check)'
-        run: npx prettier --check .
-
-      - name: 'バージョン更新チェック (Check Version Bump)'
-        run: npm run check-version-bump
-
-      - name: '単体テストの実行 (Run Unit Tests)'
-        run: npm test
-
-      - name: 'マニフェスト・多言語構成検証 (Validate Manifest & Locales)'
-        run: node scripts/validate-manifest-locales.js
+  ci:
+    name: '共通品質チェック実行 (Execute Base CI)'
+    uses: masanori-satake/common-workflows/.github/workflows/base-ci.yml@v1
+    with:
+      # Vanilla JS プロジェクトのため型チェックは不要
+      run_typecheck: false
+    # lint (npm run lint = eslint + prettier --check) と test (node --test) は
+    # base CI の `npm run lint/test --if-present` で実行される。
+    # マニフェスト・多言語構成検証は scripts/ci_checks.py 経由で
+    # node scripts/validate-manifest-locales.js を実行する。
+    # 統一パラメータ（Node=lts/*, Python=3.12, npm ci）は base 側デフォルトに閉じ込め済み。

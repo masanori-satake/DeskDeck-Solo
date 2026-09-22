@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "lint": "eslint .",
+    "lint": "eslint . && prettier --check .",
     "format": "prettier --check .",
     "check-version-bump": "node scripts/check-version-bump.js"
   },
