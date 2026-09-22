@@ -1,8 +1,8 @@
 # DeskDeck-Solo
 
 [![Release](https://img.shields.io/github/v/release/masanori-satake/DeskDeck-Solo?color=blue)](https://github.com/masanori-satake/DeskDeck-Solo/releases)
-[![CI](https://img.shields.io/github/actions/workflow/status/masanori-satake/DeskDeck-Solo/ci.yml?branch=main&label=CI)](https://github.com/masanori-satake/DeskDeck-Solo/actions/workflows/ci.yml)
-[![Security OSV-Scanner](https://img.shields.io/github/actions/workflow/status/masanori-satake/DeskDeck-Solo/osv-scan.yml?branch=main&label=OSV-Scanner)](https://github.com/masanori-satake/DeskDeck-Solo/actions/workflows/osv-scan.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/masanori-satake/DeskDeck-Solo/code-quality.yml?branch=main&label=CI)](https://github.com/masanori-satake/DeskDeck-Solo/actions/workflows/code-quality.yml)
+[![Security OSV-Scanner](https://img.shields.io/github/actions/workflow/status/masanori-satake/DeskDeck-Solo/security-scan.yml?branch=main&label=OSV-Scanner)](https://github.com/masanori-satake/DeskDeck-Solo/actions/workflows/security-scan.yml)
 [![Local-Only](https://img.shields.io/badge/Policy-Local--Only-success)](PRIVACY.md)
 [![Vanilla JS](https://img.shields.io/badge/Code-Vanilla%20JS-blue)](AGENTS.md)
 [![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)

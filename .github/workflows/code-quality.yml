@@ -1,0 +1,47 @@
+name: 'コード品質検証 (Code Quality)'
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: 'コード品質・テスト検証 (Validate Code & Tests)'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 'リポジトリのチェックアウト (Checkout Repository)'
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: 'Node.js環境と依存関係のセットアップ (Setup Node.js & Dependencies)'
+        uses: ./.github/actions/setup-node-deps
+        with:
+          node-version: '24'
+
+      - name: 'ESLint コード検証 (Run ESLint)'
+        run: npx eslint .
+
+      - name: 'Prettier フォーマットチェック (Run Prettier Check)'
+        run: npx prettier --check .
+
+      - name: 'バージョン更新チェック (Check Version Bump)'
+        run: npm run check-version-bump
+
+      - name: '単体テストの実行 (Run Unit Tests)'
+        run: npm test
+
+      - name: 'マニフェスト・多言語構成検証 (Validate Manifest & Locales)'
+        run: node scripts/validate-manifest-locales.js

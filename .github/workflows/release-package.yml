@@ -1,35 +1,42 @@
-name: Automated Release
+name: '自動リリース・パッケージング (Automated Release)'
 
 on:
   push:
     branches:
       - main
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
 jobs:
   release:
+    name: 'リリースパッケージ作成・公開 (Create & Publish Release)'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: 'リポジトリのチェックアウト (Checkout Repository)'
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: 'Node.js環境と依存関係のセットアップ (Setup Node.js & Dependencies)'
+        uses: ./.github/actions/setup-node-deps
         with:
-          node-version: '20'
+          node-version: '24'
 
-      - name: Extract Version
+      - name: 'バージョン情報の抽出 (Extract Version)'
         id: get_version
         run: |
           VERSION=$(node -p "require('./package.json').version")
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Extracted version: $VERSION"
 
-      - name: Check if Git Tag Exists
+      - name: '既存Gitタグの存在チェック (Check if Git Tag Exists)'
         id: check_tag
         run: |
           TAG_NAME="v${VERSION}"
@@ -41,7 +48,7 @@ jobs:
             echo "exists=false" >> $GITHUB_ENV
           fi
 
-      - name: Package Release ZIP Archive
+      - name: 'リリース用ZIPアーカイブの作成 (Package Release ZIP Archive)'
         if: env.exists == 'false'
         run: |
           ZIP_NAME="DeskDeck-Solo-v${VERSION}.zip"
@@ -50,7 +57,7 @@ jobs:
           cd ../..
           echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
 
-      - name: Create GitHub Release with Exponential Backoff Retry
+      - name: 'GitHub リリースの作成 (Create GitHub Release with Retry)'
         if: env.exists == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -77,3 +84,16 @@ jobs:
           done
 
           echo "GitHub Release ${TAG_NAME} created successfully!"
+
+      - name: '実行サマリーの出力 (Generate Execution Summary)'
+        run: |
+          echo "### 🚀 リリース処理サマリー (Release Summary)" >> $GITHUB_STEP_SUMMARY
+          echo "| 項目 (Item) | 値 (Value) |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
+          echo "| **対象バージョン (Version)** | \`v${VERSION}\` |" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ env.exists }}" = "true" ]; then
+            echo "| **ステータス (Status)** | ⏩ スキップ (タグ \`v${VERSION}\` は既に存在します) |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| **ステータス (Status)** | 🎉 作成完了 (Release created successfully) |" >> $GITHUB_STEP_SUMMARY
+            echo "| **パッケージファイル (ZIP)** | \`${ZIP_NAME}\` |" >> $GITHUB_STEP_SUMMARY
+          fi
