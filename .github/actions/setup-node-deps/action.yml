@@ -1,0 +1,26 @@
+name: 'Node.js環境セットアップ (Setup Node.js & Dependencies)'
+description: 'Node.jsの環境構築および依存関係の高速インストール (Set up Node.js and install npm dependencies with caching)'
+
+inputs:
+  node-version:
+    description: '使用するNode.jsのバージョン (Node.js version to use)'
+    required: false
+    default: '20'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 'Node.js のセットアップ (Setup Node.js environment)'
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+
+    - name: '依存関係のインストール (Install npm dependencies)'
+      shell: bash
+      run: |
+        if [ -f package-lock.json ]; then
+          npm ci
+        else
+          npm install
+        fi

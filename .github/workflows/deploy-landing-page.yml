@@ -1,4 +1,4 @@
-name: Deploy Landing Page
+name: 'ランディングページデプロイ (Deploy Landing Page)'
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
     paths:
       - 'projects/web/**'
       - 'docs/**'
-      - '.github/workflows/deploy-lp.yml'
+      - '.github/workflows/deploy-landing-page.yml'
   workflow_dispatch:
 
 permissions:
@@ -20,22 +20,25 @@ concurrency:
 
 jobs:
   deploy:
+    name: 'GitHub Pages デプロイ (Deploy to GitHub Pages)'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
     steps:
-      - name: Checkout
+      - name: 'リポジトリのチェックアウト (Checkout Repository)'
         uses: actions/checkout@v4
 
-      - name: Setup Pages
+      - name: 'GitHub Pages 設定 (Setup Pages)'
         uses: actions/configure-pages@v4
 
-      - name: Upload Artifact
+      - name: '成果物のアップロード (Upload Pages Artifact)'
         uses: actions/upload-pages-artifact@v3
         with:
           path: 'projects/web'
 
-      - name: Deploy to GitHub Pages
+      - name: 'GitHub Pages へのデプロイ (Deploy to GitHub Pages)'
         id: deployment
         uses: actions/deploy-pages@v4
