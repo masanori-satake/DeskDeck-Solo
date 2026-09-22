@@ -21,14 +21,14 @@ jobs:
 
     steps:
       - name: 'リポジトリのチェックアウト (Checkout Repository)'
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
         with:
           fetch-depth: 0
 
       - name: 'Node.js環境と依存関係のセットアップ (Setup Node.js & Dependencies)'
         uses: ./.github/actions/setup-node-deps
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: 'ESLint コード検証 (Run ESLint)'
         run: npx eslint .

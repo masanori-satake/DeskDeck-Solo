@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
@@ -16,14 +20,14 @@ jobs:
 
     steps:
       - name: 'リポジトリのチェックアウト (Checkout Repository)'
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
         with:
           fetch-depth: 0
 
       - name: 'Node.js環境と依存関係のセットアップ (Setup Node.js & Dependencies)'
         uses: ./.github/actions/setup-node-deps
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: 'バージョン情報の抽出 (Extract Version)'
         id: get_version
@@ -83,7 +87,7 @@ jobs:
 
       - name: '実行サマリーの出力 (Generate Execution Summary)'
         run: |
-          echo "### 🚀 リリリース処理サマリー (Release Summary)" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 リリース処理サマリー (Release Summary)" >> $GITHUB_STEP_SUMMARY
           echo "| 項目 (Item) | 値 (Value) |" >> $GITHUB_STEP_SUMMARY
           echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
           echo "| **対象バージョン (Version)** | \`v${VERSION}\` |" >> $GITHUB_STEP_SUMMARY

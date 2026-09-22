@@ -5,16 +5,16 @@ inputs:
   node-version:
     description: '使用するNode.jsのバージョン (Node.js version to use)'
     required: false
-    default: '20'
+    default: '24'
 
 runs:
   using: 'composite'
   steps:
     - name: 'Node.js のセットアップ (Setup Node.js environment)'
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
       with:
         node-version: ${{ inputs.node-version }}
-        cache: 'npm'
+        cache: ${{ hashFiles('package-lock.json') != '' && 'npm' || '' }}
 
     - name: '依存関係のインストール (Install npm dependencies)'
       shell: bash
