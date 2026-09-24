@@ -42,18 +42,30 @@ class MockElement {
     this.listeners.set(name, listener);
   }
 
-  dispatch(name, clientX) {
-    this.listeners.get(name)({ type: name, clientX, pointerId: 1 });
+  dispatch(name, clientX, pointerId = 1) {
+    const target =
+      (name === 'pointermove' || name === 'pointerup') && MockElement.pointerCaptures.get(pointerId)
+        ? MockElement.pointerCaptures.get(pointerId)
+        : this;
+    target.listeners.get(name)?.({ type: name, clientX, pointerId });
   }
 
   getBoundingClientRect() {
     return { left: 100, width: 240 };
   }
 
-  setPointerCapture() {}
+  setPointerCapture(pointerId) {
+    MockElement.pointerCaptures.set(pointerId, this);
+  }
 
-  releasePointerCapture() {}
+  releasePointerCapture(pointerId) {
+    if (MockElement.pointerCaptures.get(pointerId) === this) {
+      MockElement.pointerCaptures.delete(pointerId);
+    }
+  }
 }
+
+MockElement.pointerCaptures = new Map();
 
 function findByClass(element, name) {
   if (element.className.split(' ').includes(name)) return element;
@@ -104,30 +116,32 @@ test('discrete scale selects captured taps without reselecting after swipes or c
 
     const scale = findByClass(slotsContainer, 'discrete-scale-control');
     assert.ok(scale);
+    const outside = new MockElement();
     const track = findByClass(scale, 'scale-ticks-track');
     assert.equal(track.children[0].listeners.has('click'), false);
 
     scale.dispatch('pointerdown', 169);
-    scale.dispatch('pointerup', 184);
+    outside.dispatch('pointerup', 184);
     assert.equal(scale.getAttribute('aria-valuenow'), '1.25');
+    assert.equal(MockElement.pointerCaptures.has(1), false);
 
     scale.dispatch('pointerdown', 150);
-    scale.dispatch('pointerup', 150);
+    outside.dispatch('pointerup', 150);
     assert.equal(scale.getAttribute('aria-valuenow'), '0.75');
     assert.deepEqual(messages.at(-1), { action: 'set_speed', payload: { value: 0.75 } });
 
     scale.dispatch('pointerdown', 150);
-    scale.dispatch('pointermove', 181);
-    scale.dispatch('pointerup', 150);
+    outside.dispatch('pointermove', 181);
+    outside.dispatch('pointerup', 150);
     assert.equal(scale.getAttribute('aria-valuenow'), '1');
 
     scale.dispatch('pointerdown', 400);
-    scale.dispatch('pointerup', 400);
+    outside.dispatch('pointerup', 400);
     assert.equal(scale.getAttribute('aria-valuenow'), '3');
 
     scale.dispatch('pointerdown', 150);
-    scale.dispatch('pointermove', 181);
-    scale.dispatch('pointerup', 150);
+    outside.dispatch('pointermove', 181);
+    outside.dispatch('pointerup', 150);
     assert.equal(scale.getAttribute('aria-valuenow'), '3');
 
     scale.dispatch('pointerdown', 150);
