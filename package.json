@@ -1,6 +1,6 @@
 {
   "name": "deskdock-solo",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Chromebook tablet mode virtual hardware deck Chrome extension",
   "type": "module",
   "private": true,
