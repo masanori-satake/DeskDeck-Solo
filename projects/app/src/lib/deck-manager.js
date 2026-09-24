@@ -35,6 +35,7 @@ export const DECK_PRESETS = {
         defaultValue: 1.0,
         step: 0.25,
         unit: 'x',
+        discrete: true,
         action: 'set_speed',
       },
       {

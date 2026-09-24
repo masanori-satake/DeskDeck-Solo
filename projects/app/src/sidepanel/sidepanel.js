@@ -131,6 +131,11 @@ async function loadAndRenderActiveDeck(deckId) {
   renderDeckSlots(deckId);
 }
 
+/**
+ * Render the current deck's slots, including their labels and controls.
+ *
+ * @param {string} deckId - Identifier used to persist slot state.
+ */
 function renderDeckSlots(deckId) {
   const container = document.getElementById('slotsContainer');
   if (!container || !currentDeckPreset) return;
@@ -141,10 +146,12 @@ function renderDeckSlots(deckId) {
     const card = document.createElement('div');
     card.className = `slot-card slot-${slot.type}`;
 
-    const label = document.createElement('div');
-    label.className = 'slot-label';
-    label.textContent = slot.label;
-    card.appendChild(label);
+    if (slot.type !== 'knob') {
+      const label = document.createElement('div');
+      label.className = 'slot-label';
+      label.textContent = slot.label;
+      card.appendChild(label);
+    }
 
     if (slot.type === 'knob') {
       renderKnobWidget(card, slot, deckId);
@@ -165,106 +172,93 @@ function renderDeckSlots(deckId) {
 }
 
 /**
- * Render Large Rotary Knob with Circular Pointer Events (Polar Drag Angle Calculation)
+ * Render Horizontal Knob Controls (Continuous Horizontal Wheel or Discrete Choice Scale)
  */
 function renderKnobWidget(cardContainer, slot, deckId) {
-  const container = document.createElement('div');
-  container.className = 'knob-container';
-
-  const dialWrapper = document.createElement('div');
-  dialWrapper.className = 'knob-dial-wrapper';
-
-  // SVG Tick Marks Ring around Knob
-  const svgNS = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('class', 'knob-ticks-svg');
-  svg.setAttribute('viewBox', '0 0 140 140');
-
-  const totalTicks = 21;
-  const minAngleDeg = -135;
-  const maxAngleDeg = 135;
-
-  for (let i = 0; i < totalTicks; i++) {
-    const fraction = i / (totalTicks - 1);
-    const angleDeg = minAngleDeg + fraction * (maxAngleDeg - minAngleDeg);
-    const angleRad = (angleDeg - 90) * (Math.PI / 180);
-
-    const isMajor = i % 5 === 0;
-    const innerR = isMajor ? 56 : 59;
-    const outerR = 66;
-
-    const x1 = 70 + innerR * Math.cos(angleRad);
-    const y1 = 70 + innerR * Math.sin(angleRad);
-    const x2 = 70 + outerR * Math.cos(angleRad);
-    const y2 = 70 + outerR * Math.sin(angleRad);
-
-    const line = document.createElementNS(svgNS, 'line');
-    line.setAttribute('x1', x1.toFixed(2));
-    line.setAttribute('y1', y1.toFixed(2));
-    line.setAttribute('x2', x2.toFixed(2));
-    line.setAttribute('y2', y2.toFixed(2));
-    line.setAttribute('class', `knob-tick ${isMajor ? 'major' : 'minor'}`);
-    svg.appendChild(line);
+  if (slot.discrete) {
+    renderDiscreteKnobWidget(cardContainer, slot, deckId);
+  } else {
+    renderContinuousWheelWidget(cardContainer, slot, deckId);
   }
+}
 
-  dialWrapper.appendChild(svg);
+/**
+ * Render Continuous Range Control with Horizontal Mouse Wheel / Roller Control on Right and Feedback on Left
+ */
+function renderContinuousWheelWidget(cardContainer, slot, deckId) {
+  const container = document.createElement('div');
+  container.className = 'knob-row-container continuous-wheel-container';
 
-  const dial = document.createElement('div');
-  dial.className = 'knob-dial';
-  dial.setAttribute('role', 'slider');
-  dial.setAttribute('tabindex', '0');
-  dial.setAttribute('aria-label', slot.label);
-  dial.setAttribute('aria-valuemin', String(slot.min));
-  dial.setAttribute('aria-valuemax', String(slot.max));
+  const feedbackArea = document.createElement('div');
+  feedbackArea.className = 'knob-feedback-area';
 
-  const cap = document.createElement('div');
-  cap.className = 'knob-cap';
-
-  const pointer = document.createElement('div');
-  pointer.className = 'knob-pointer';
-  dial.appendChild(pointer);
-  dial.appendChild(cap);
-  dialWrapper.appendChild(dial);
+  const labelElem = document.createElement('div');
+  labelElem.className = 'slot-label knob-row-label';
+  labelElem.textContent = slot.label;
 
   const valueDisplay = document.createElement('div');
-  valueDisplay.className = 'knob-value';
+  valueDisplay.className = 'knob-value-display';
 
-  container.appendChild(dialWrapper);
-  container.appendChild(valueDisplay);
+  feedbackArea.appendChild(labelElem);
+  feedbackArea.appendChild(valueDisplay);
+
+  const wheelControl = document.createElement('div');
+  wheelControl.className = 'wheel-control-area';
+  wheelControl.setAttribute('role', 'slider');
+  wheelControl.setAttribute('tabindex', '0');
+  wheelControl.setAttribute('aria-label', slot.label);
+  wheelControl.setAttribute('aria-valuemin', String(slot.min));
+  wheelControl.setAttribute('aria-valuemax', String(slot.max));
+
+  const wheelCylinder = document.createElement('div');
+  wheelCylinder.className = 'wheel-cylinder';
+
+  const ridgeTrack = document.createElement('div');
+  ridgeTrack.className = 'wheel-ridge-track';
+
+  for (let i = 0; i < 18; i++) {
+    const ridge = document.createElement('div');
+    ridge.className = 'wheel-ridge';
+    ridgeTrack.appendChild(ridge);
+  }
+
+  const fillIndicator = document.createElement('div');
+  fillIndicator.className = 'wheel-fill-indicator';
+
+  const centerNotch = document.createElement('div');
+  centerNotch.className = 'wheel-center-notch';
+
+  wheelCylinder.appendChild(ridgeTrack);
+  wheelCylinder.appendChild(fillIndicator);
+  wheelCylinder.appendChild(centerNotch);
+  wheelControl.appendChild(wheelCylinder);
+
+  container.appendChild(feedbackArea);
+  container.appendChild(wheelControl);
   cardContainer.appendChild(container);
 
   let val =
     currentSlotStates[slot.id] !== undefined ? currentSlotStates[slot.id] : slot.defaultValue;
   let unroundedVal = val;
 
-  const updateKnobUI = (value) => {
+  const updateWheelUI = (value) => {
     const norm = (value - slot.min) / (slot.max - slot.min);
-    // Angle range: -135deg to +135deg (270 degrees total)
-    const angle = -135 + norm * 270;
-    pointer.style.transform = `rotate(${angle}deg)`;
     valueDisplay.textContent = `${value}${slot.unit || ''}`;
-    dial.setAttribute('aria-valuenow', String(value));
+    wheelControl.setAttribute('aria-valuenow', String(value));
 
-    // Highlight SVG ticks up to current value
-    const lines = svg.querySelectorAll('line');
-    lines.forEach((line, idx) => {
-      const lineNorm = idx / (totalTicks - 1);
-      if (lineNorm <= norm) {
-        line.classList.add('active');
-      } else {
-        line.classList.remove('active');
-      }
-    });
+    const shiftPx = (norm * 160) % 20;
+    ridgeTrack.style.transform = `translateX(${-shiftPx}px)`;
+    fillIndicator.style.width = `${norm * 100}%`;
   };
 
-  updateKnobUI(val);
+  updateWheelUI(val);
 
-  const applyKnobValue = (newVal) => {
+  const applyValue = (newVal) => {
     if (newVal === val) return;
 
     val = newVal;
     currentSlotStates[slot.id] = val;
-    updateKnobUI(val);
+    updateWheelUI(val);
     saveDeckSlotStates(deckId, currentSlotStates);
     dispatchDeckAction(slot.action, { value: val });
 
@@ -272,21 +266,17 @@ function renderKnobWidget(cardContainer, slot, deckId) {
     if (appSettings.hapticFeedback) triggerHaptic(8);
   };
 
-  // Circular Pointer Movement (Polar Coordinates / Math.atan2)
   let isDragging = false;
-  let lastAngle = 0;
+  let startX = 0;
+  let startVal = val;
 
   const onPointerDown = (e) => {
     isDragging = true;
-    dialWrapper.classList.add('dragging');
-
-    const rect = dial.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-
-    lastAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
+    wheelControl.classList.add('dragging');
+    startX = e.clientX;
+    startVal = unroundedVal;
     try {
-      dial.setPointerCapture(e.pointerId);
+      wheelControl.setPointerCapture(e.pointerId);
     } catch {
       // ignore
     }
@@ -294,49 +284,47 @@ function renderKnobWidget(cardContainer, slot, deckId) {
 
   const onPointerMove = (e) => {
     if (!isDragging) return;
-
-    const rect = dial.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-
-    const currentAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
-    let deltaAngle = currentAngle - lastAngle;
-
-    // Normalize angle delta to range [-PI, PI] to handle 180/-180 boundary wrap
-    while (deltaAngle > Math.PI) deltaAngle -= 2 * Math.PI;
-    while (deltaAngle < -Math.PI) deltaAngle += 2 * Math.PI;
-
-    lastAngle = currentAngle;
-
-    // Total sweep angle range is 270 degrees (1.5 * Math.PI radians)
+    const deltaX = e.clientX - startX;
     const range = slot.max - slot.min;
-    const deltaVal = (deltaAngle / (1.5 * Math.PI)) * range;
+    const deltaVal = (deltaX / 150) * range;
 
-    unroundedVal = Math.max(slot.min, Math.min(slot.max, unroundedVal + deltaVal));
-
+    unroundedVal = Math.max(slot.min, Math.min(slot.max, startVal + deltaVal));
     const step = slot.step || 1;
     const newVal = Math.round(unroundedVal / step) * step;
-
-    applyKnobValue(newVal);
+    applyValue(newVal);
   };
 
   const onPointerUp = (e) => {
     if (isDragging) {
       isDragging = false;
-      dialWrapper.classList.remove('dragging');
+      wheelControl.classList.remove('dragging');
       try {
-        dial.releasePointerCapture(e.pointerId);
+        wheelControl.releasePointerCapture(e.pointerId);
       } catch {
         // ignore
       }
     }
   };
 
-  dial.addEventListener('pointerdown', onPointerDown);
-  dial.addEventListener('pointermove', onPointerMove);
-  dial.addEventListener('pointerup', onPointerUp);
-  dial.addEventListener('pointercancel', onPointerUp);
-  dial.addEventListener('keydown', (e) => {
+  wheelControl.addEventListener('pointerdown', onPointerDown);
+  wheelControl.addEventListener('pointermove', onPointerMove);
+  wheelControl.addEventListener('pointerup', onPointerUp);
+  wheelControl.addEventListener('pointercancel', onPointerUp);
+
+  wheelControl.addEventListener(
+    'wheel',
+    (e) => {
+      e.preventDefault();
+      const step = slot.step || 1;
+      const direction = e.deltaY > 0 || e.deltaX > 0 ? -1 : 1;
+      const newVal = Math.max(slot.min, Math.min(slot.max, val + direction * step));
+      unroundedVal = newVal;
+      applyValue(newVal);
+    },
+    { passive: false }
+  );
+
+  wheelControl.addEventListener('keydown', (e) => {
     const direction =
       e.key === 'ArrowUp' || e.key === 'ArrowRight'
         ? 1
@@ -349,7 +337,194 @@ function renderKnobWidget(cardContainer, slot, deckId) {
     const step = slot.step || 1;
     const newVal = Math.max(slot.min, Math.min(slot.max, val + direction * step));
     unroundedVal = newVal;
-    applyKnobValue(newVal);
+    applyValue(newVal);
+  });
+}
+
+/**
+ * Render Discrete Option Control with Choice Tick Scale (Swipeable) on Right and Feedback on Left
+ */
+function renderDiscreteKnobWidget(cardContainer, slot, deckId) {
+  const container = document.createElement('div');
+  container.className = 'knob-row-container discrete-scale-container';
+
+  const feedbackArea = document.createElement('div');
+  feedbackArea.className = 'knob-feedback-area';
+
+  const labelElem = document.createElement('div');
+  labelElem.className = 'slot-label knob-row-label';
+  labelElem.textContent = slot.label;
+
+  const valueDisplay = document.createElement('div');
+  valueDisplay.className = 'knob-value-display';
+
+  feedbackArea.appendChild(labelElem);
+  feedbackArea.appendChild(valueDisplay);
+
+  const scaleControl = document.createElement('div');
+  scaleControl.className = 'discrete-scale-control';
+  scaleControl.setAttribute('role', 'slider');
+  scaleControl.setAttribute('tabindex', '0');
+  scaleControl.setAttribute('aria-label', slot.label);
+  scaleControl.setAttribute('aria-valuemin', String(slot.min));
+  scaleControl.setAttribute('aria-valuemax', String(slot.max));
+
+  const options = [];
+  const step = slot.step || 1;
+  for (let v = slot.min; v <= slot.max + 1e-6; v += step) {
+    options.push(Math.round(v * 1000) / 1000);
+  }
+
+  const trackElem = document.createElement('div');
+  trackElem.className = 'scale-ticks-track';
+
+  const tickElements = [];
+
+  options.forEach((optVal, idx) => {
+    const tickWrapper = document.createElement('div');
+    tickWrapper.className = 'scale-tick-wrapper';
+    tickWrapper.setAttribute('data-index', String(idx));
+
+    const isMajor =
+      idx === 0 || idx === options.length - 1 || optVal === 1.0 || optVal === slot.defaultValue;
+    const tickLine = document.createElement('div');
+    tickLine.className = `scale-tick-line ${isMajor ? 'major' : 'minor'}`;
+
+    const tickLabel = document.createElement('span');
+    tickLabel.className = 'scale-tick-label';
+    if (isMajor) {
+      tickLabel.textContent = `${optVal}${slot.unit || ''}`;
+    }
+
+    tickWrapper.appendChild(tickLine);
+    if (isMajor) tickWrapper.appendChild(tickLabel);
+
+    trackElem.appendChild(tickWrapper);
+    tickElements.push(tickWrapper);
+  });
+
+  scaleControl.appendChild(trackElem);
+  container.appendChild(feedbackArea);
+  container.appendChild(scaleControl);
+  cardContainer.appendChild(container);
+
+  let currentVal =
+    currentSlotStates[slot.id] !== undefined ? currentSlotStates[slot.id] : slot.defaultValue;
+
+  let currentIndex = options.findIndex((v) => Math.abs(v - currentVal) < 1e-4);
+  if (currentIndex === -1) currentIndex = 0;
+
+  const updateDiscreteUI = (idx) => {
+    const activeVal = options[idx];
+    valueDisplay.textContent = `${activeVal}${slot.unit || ''}`;
+    scaleControl.setAttribute('aria-valuenow', String(activeVal));
+
+    tickElements.forEach((elem, i) => {
+      if (i === idx) {
+        elem.classList.add('active');
+      } else {
+        elem.classList.remove('active');
+      }
+    });
+  };
+
+  updateDiscreteUI(currentIndex);
+
+  const applyDiscreteIndex = (newIdx) => {
+    const clampedIdx = Math.max(0, Math.min(options.length - 1, newIdx));
+    if (clampedIdx === currentIndex) return;
+
+    currentIndex = clampedIdx;
+    currentVal = options[currentIndex];
+    currentSlotStates[slot.id] = currentVal;
+
+    updateDiscreteUI(currentIndex);
+    saveDeckSlotStates(deckId, currentSlotStates);
+    dispatchDeckAction(slot.action, { value: currentVal });
+
+    if (appSettings.soundEffects) playSwitchSound(true);
+    if (appSettings.hapticFeedback) triggerHaptic(12);
+  };
+
+  let isPointerDown = false;
+  let startX = 0;
+  let hasSwiped = false;
+
+  const onPointerDown = (e) => {
+    isPointerDown = true;
+    startX = e.clientX;
+    hasSwiped = false;
+    try {
+      scaleControl.setPointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
+  };
+
+  const onPointerMove = (e) => {
+    if (!isPointerDown) return;
+    const deltaX = e.clientX - startX;
+    if (Math.abs(deltaX) > 25) hasSwiped = true;
+
+    if (deltaX < -25) {
+      if (currentIndex > 0) {
+        applyDiscreteIndex(currentIndex - 1);
+        startX = e.clientX;
+      }
+    } else if (deltaX > 25) {
+      if (currentIndex < options.length - 1) {
+        applyDiscreteIndex(currentIndex + 1);
+        startX = e.clientX;
+      }
+    }
+  };
+
+  const onPointerUp = (e) => {
+    if (isPointerDown) {
+      isPointerDown = false;
+      if (e.type === 'pointerup' && !hasSwiped && Math.abs(e.clientX - startX) <= 25) {
+        const trackBounds = trackElem.getBoundingClientRect();
+        if (trackBounds.width > 0) {
+          const index = Math.floor(
+            ((e.clientX - trackBounds.left) / trackBounds.width) * options.length
+          );
+          applyDiscreteIndex(index);
+        }
+      }
+      try {
+        scaleControl.releasePointerCapture(e.pointerId);
+      } catch {
+        // ignore
+      }
+    }
+  };
+
+  scaleControl.addEventListener('pointerdown', onPointerDown);
+  scaleControl.addEventListener('pointermove', onPointerMove);
+  scaleControl.addEventListener('pointerup', onPointerUp);
+  scaleControl.addEventListener('pointercancel', onPointerUp);
+
+  scaleControl.addEventListener(
+    'wheel',
+    (e) => {
+      e.preventDefault();
+      const direction = e.deltaY > 0 || e.deltaX > 0 ? -1 : 1;
+      applyDiscreteIndex(currentIndex + direction);
+    },
+    { passive: false }
+  );
+
+  scaleControl.addEventListener('keydown', (e) => {
+    const direction =
+      e.key === 'ArrowUp' || e.key === 'ArrowRight'
+        ? 1
+        : e.key === 'ArrowDown' || e.key === 'ArrowLeft'
+          ? -1
+          : 0;
+    if (!direction) return;
+
+    e.preventDefault();
+    applyDiscreteIndex(currentIndex + direction);
   });
 }
 
