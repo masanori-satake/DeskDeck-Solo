@@ -194,7 +194,11 @@ function detachCleanupListeners() {
  * @returns {boolean}
  */
 export function isChromeAudioSupported() {
-  return typeof chrome !== 'undefined' && Boolean(chrome.audio);
+  return (
+    typeof chrome !== 'undefined' &&
+    Boolean(chrome.audio) &&
+    typeof chrome.audio.getDevices === 'function'
+  );
 }
 
 /**
@@ -389,11 +393,14 @@ export function playButtonSound() {
 }
 
 /**
- * Trigger haptic vibration if supported (useful on Chromebook touchscreen / tablet mode)
+ * Trigger haptic vibration if supported and user activation is present (useful on Chromebook touchscreen / tablet mode)
  * @param {number} [duration=15]
  */
 export function triggerHaptic(duration = 15) {
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    if (navigator.userActivation && !navigator.userActivation.hasBeenActive) {
+      return;
+    }
     try {
       navigator.vibrate(duration);
     } catch {
