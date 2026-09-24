@@ -399,11 +399,6 @@ function renderDiscreteKnobWidget(cardContainer, slot, deckId) {
     tickWrapper.appendChild(tickLine);
     if (isMajor) tickWrapper.appendChild(tickLabel);
 
-    tickWrapper.addEventListener('click', (e) => {
-      e.stopPropagation();
-      applyDiscreteIndex(idx);
-    });
-
     trackElem.appendChild(tickWrapper);
     tickElements.push(tickWrapper);
   });
@@ -453,10 +448,12 @@ function renderDiscreteKnobWidget(cardContainer, slot, deckId) {
 
   let isPointerDown = false;
   let startX = 0;
+  let hasSwiped = false;
 
   const onPointerDown = (e) => {
     isPointerDown = true;
     startX = e.clientX;
+    hasSwiped = false;
     try {
       scaleControl.setPointerCapture(e.pointerId);
     } catch {
@@ -467,6 +464,7 @@ function renderDiscreteKnobWidget(cardContainer, slot, deckId) {
   const onPointerMove = (e) => {
     if (!isPointerDown) return;
     const deltaX = e.clientX - startX;
+    if (Math.abs(deltaX) > 25) hasSwiped = true;
 
     if (deltaX < -25) {
       if (currentIndex > 0) {
@@ -484,6 +482,15 @@ function renderDiscreteKnobWidget(cardContainer, slot, deckId) {
   const onPointerUp = (e) => {
     if (isPointerDown) {
       isPointerDown = false;
+      if (e.type === 'pointerup' && !hasSwiped && Math.abs(e.clientX - startX) <= 25) {
+        const trackBounds = trackElem.getBoundingClientRect();
+        if (trackBounds.width > 0) {
+          const index = Math.floor(
+            ((e.clientX - trackBounds.left) / trackBounds.width) * options.length
+          );
+          applyDiscreteIndex(index);
+        }
+      }
       try {
         scaleControl.releasePointerCapture(e.pointerId);
       } catch {
