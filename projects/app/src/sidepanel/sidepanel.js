@@ -131,6 +131,11 @@ async function loadAndRenderActiveDeck(deckId) {
   renderDeckSlots(deckId);
 }
 
+/**
+ * Render the current deck's slots, including their labels and controls.
+ *
+ * @param {string} deckId - Identifier used to persist slot state.
+ */
 function renderDeckSlots(deckId) {
   const container = document.getElementById('slotsContainer');
   if (!container || !currentDeckPreset) return;
