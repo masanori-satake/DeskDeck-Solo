@@ -2,9 +2,15 @@
 """バージョン整合性チェックのテンプレート (Version Consistency Check Template).
 
 プロジェクト内の複数ファイルに散らばるバージョン表記が一致しているかを検証する。
-このスクリプトは **テンプレート** であり、各プロジェクトの実ファイル構成に合わせて
-`VERSION_SOURCES` を編集して使う。共通ワークフロー（base-ci.yml）からは
-`scripts/ci_checks.py` 経由で呼び出される想定。
+common-workflows の Chrome 拡張機能テンプレートの `scripts/check_version.py` を、本リポジトリの
+ファイル構成（package.json / package-lock.json / projects/app/manifest.json）に合わせて
+`VERSION_SOURCES` を編集したもの。
+
+呼び出し元:
+  - `scripts/update_version.py`（`npm run update-version -- <X.Y.Z>`）の最後
+  - PR の `/ai-bump`（共通ワークフローの bump_version.sh）による更新後の検証
+  - 手動: `python3 scripts/check_version.py`
+  `scripts/ci_checks.py` の `CHECKS` には含めていない（CI では実行しない）。
 
 拡張方法:
   1. `VERSION_SOURCES` に (ラベル, パス, 抽出関数) を追加/削除する。
