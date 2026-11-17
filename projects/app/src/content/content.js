@@ -414,7 +414,7 @@ async function togglePictureInPicture() {
     try {
       await document.exitPictureInPicture();
     } catch (err) {
-      console.warn('Exit PiP failed:', err);
+      console.debug('Exit PiP failed:', err);
     }
     return;
   }
@@ -424,7 +424,9 @@ async function togglePictureInPicture() {
     try {
       await video.requestPictureInPicture();
     } catch (err) {
-      console.warn('Request PiP failed:', err);
+      // Expected when the trigger came from the side panel (the page
+      // has no user activation); not an error worth surfacing.
+      console.debug('Request PiP failed:', err);
     }
   }
 }

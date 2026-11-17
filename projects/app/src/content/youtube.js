@@ -211,24 +211,30 @@
       try {
         await document.exitPictureInPicture();
       } catch (err) {
-        console.warn('YouTube PiP exit error:', err);
+        console.debug('YouTube PiP exit error:', err);
       }
+      return;
+    }
+
+    // Prefer the player's own PiP button, like fullscreen: the raw
+    // requestPictureInPicture() call is rejected when it is triggered
+    // from the side panel (no user activation in the page), which used
+    // to land in the extension's error list as a scary-looking warning
+    // even though the fallback then worked. The API stays as the
+    // fallback for layouts without the button, and its (expected)
+    // rejection is only debug-logged.
+    const pipBtn = document.querySelector('.ytp-pip-button');
+    if (pipBtn) {
+      pipBtn.click();
       return;
     }
 
     if (video && document.pictureInPictureEnabled) {
       try {
         await video.requestPictureInPicture();
-        return;
       } catch (err) {
-        console.warn('YouTube video.requestPictureInPicture failed, trying fallback:', err);
+        console.debug('YouTube video.requestPictureInPicture failed:', err);
       }
-    }
-
-    // Fallback: Click YouTube PiP button if available
-    const pipBtn = document.querySelector('.ytp-pip-button');
-    if (pipBtn) {
-      pipBtn.click();
     }
   }
 
