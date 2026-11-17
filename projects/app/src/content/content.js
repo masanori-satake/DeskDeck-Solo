@@ -134,8 +134,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const padId = payload ? payload.padId : null;
       if (padId === 'play') playMedia();
       else if (padId === 'pause') pauseMedia();
-      else if (padId === 'prev') skipMediaTrack(-10);
-      else if (padId === 'next') skipMediaTrack(10);
+      // 'prev'/'next' are the pre-0.1.6 pad ids and meant ±10s on generic
+      // pages; keep them as aliases of the renamed back10/fwd10 pads.
+      else if (padId === 'back10' || padId === 'prev') skipMediaTrack(-10);
+      else if (padId === 'fwd10' || padId === 'next') skipMediaTrack(10);
       else toggleMediaPlayback();
       sendResponse({ handled: true });
       break;

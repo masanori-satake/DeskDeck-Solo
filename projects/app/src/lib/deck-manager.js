@@ -69,9 +69,25 @@ export const DECK_PRESETS = {
         pads: [
           { id: 'play', label: 'Play', icon: '▶' },
           { id: 'pause', label: 'Pause', icon: '⏸' },
-          { id: 'prev', label: 'Prev', icon: '⏮' },
-          { id: 'next', label: 'Next', icon: '⏭' },
+          { id: 'back10', label: '-10s', icon: '⏪' },
+          { id: 'fwd10', label: '+10s', icon: '⏩' },
         ],
+      },
+      {
+        id: 'media_prev_video',
+        type: 'button',
+        label: 'Previous Video',
+        icon: '⏮',
+        variant: 'secondary',
+        action: 'prev_track',
+      },
+      {
+        id: 'media_next_video',
+        type: 'button',
+        label: 'Next Video',
+        icon: '⏭',
+        variant: 'secondary',
+        action: 'next_track',
       },
       {
         id: 'media_mute',
@@ -132,6 +148,13 @@ export const DECK_PRESETS = {
         label: 'Emergency Guard',
         defaultValue: false,
         action: 'toggle_emergency_cut',
+      },
+      {
+        id: 'mic_mute',
+        type: 'switch',
+        label: 'Mic Mute',
+        defaultValue: false,
+        action: 'toggle_mic_mute',
       },
       {
         id: 'camera_toggle',
