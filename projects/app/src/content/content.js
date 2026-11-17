@@ -97,18 +97,47 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
     }
 
-    case 'seek_dial':
-    case 'scroll_dial': {
+    case 'seek_dial': {
       // Relative seek from jog dial rotation
       if (payload && payload.value !== undefined) {
         const deltaSeconds = (payload.value - 50) * 0.2;
         if (deltaSeconds !== 0) {
           seekVideo(deltaSeconds, true);
         }
-      } else {
-        // Fallback for general page scroll dial
-        const delta = ((payload ? payload.value : 50) - 50) * 10;
-        window.scrollBy({ top: delta, behavior: 'smooth' });
+      }
+      sendResponse({ handled: true });
+      break;
+    }
+
+    case 'scroll_dial': {
+      // Standard deck Scroll Wheel. This case used to be shared with
+      // seek_dial, so the wheel seeked the (usually absent) video and
+      // never scrolled the page. The knob sends absolute values; the
+      // page scrolls by the delta from the previous value, scaled by
+      // the Scroll Speed factor. The first message after load only
+      // syncs the baseline (the panel may hold a value from another
+      // tab), it does not scroll.
+      if (payload && payload.value !== undefined) {
+        if (lastScrollDialValue === null) {
+          lastScrollDialValue = payload.value;
+        } else {
+          const deltaSteps = payload.value - lastScrollDialValue;
+          lastScrollDialValue = payload.value;
+          if (deltaSteps !== 0) {
+            window.scrollBy(0, deltaSteps * 4 * scrollSpeedFactor);
+          }
+        }
+      }
+      sendResponse({ handled: true });
+      break;
+    }
+
+    case 'set_scroll_speed': {
+      // Standard deck Scroll Speed (1x..10x). There was no handler for
+      // this action anywhere, so the knob changed nothing.
+      const factor = payload ? payload.value : undefined;
+      if (typeof factor === 'number' && factor >= 1 && factor <= 10) {
+        scrollSpeedFactor = factor;
       }
       sendResponse({ handled: true });
       break;
@@ -335,6 +364,8 @@ function skipMediaTrack(seconds) {
   seekVideo(seconds, true);
 }
 
+let lastScrollDialValue = null;
+let scrollSpeedFactor = 5;
 let seekToastEl = null;
 let seekToastTimer = null;
 

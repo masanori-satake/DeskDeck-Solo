@@ -860,7 +860,12 @@ function renderFaderWidget(cardContainer, slot, deckId) {
 }
 
 /**
- * Render Protective Flip Switch with 2-Step Upward Swipe & Tap Interaction
+ * Render Protective Flip Switch with 2-Step Sideways Swipe & Tap
+ * Interaction. The cover used to open upward, but a vertical drag on
+ * the cover was indistinguishable from the deck pager's flick, so
+ * closing the cover flipped the page. The cover now swings open
+ * sideways like a door, and the housing is wide and low instead of
+ * tall, which also returns page height to the decks that use it.
  */
 function renderFlipSwitchWidget(cardContainer, slot, deckId) {
   const wrapper = document.createElement('div');
@@ -879,7 +884,7 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
 
   const coverLabel = document.createElement('span');
   coverLabel.className = 'flip-switch-cover-label';
-  coverLabel.textContent = 'SWIPE ▲';
+  coverLabel.textContent = 'SWIPE ▶';
   cover.appendChild(coverLabel);
 
   // Switch base & lever inside
@@ -912,7 +917,7 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
   cardContainer.appendChild(wrapper);
 
   let isCoverOpen = false;
-  let dragStartY = 0;
+  let dragStartX = 0;
   let isCoverDragging = false;
   let didCoverDrag = false;
 
@@ -929,7 +934,7 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
   const onCoverPointerDown = (e) => {
     isCoverDragging = true;
     didCoverDrag = false;
-    dragStartY = e.clientY;
+    dragStartX = e.clientX;
     try {
       cover.setPointerCapture(e.pointerId);
     } catch {
@@ -939,12 +944,12 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
 
   const onCoverPointerMove = (e) => {
     if (!isCoverDragging) return;
-    const deltaY = e.clientY - dragStartY;
+    const deltaX = e.clientX - dragStartX;
 
-    if (deltaY < -15 && !isCoverOpen) {
+    if (deltaX > 15 && !isCoverOpen) {
       didCoverDrag = true;
       setCoverOpen(true);
-    } else if (deltaY > 15 && isCoverOpen) {
+    } else if (deltaX < -15 && isCoverOpen) {
       didCoverDrag = true;
       setCoverOpen(false);
     }
@@ -1044,6 +1049,13 @@ const PAD_ICON_PATHS = {
   triLeft: '<path d="M16 5v14L7 12z"/>',
   triRight: '<path d="M8 5v14l9-7z"/>',
   mic: '<path d="M12 14.5a2.75 2.75 0 0 0 2.75-2.75v-5.5a2.75 2.75 0 1 0-5.5 0v5.5A2.75 2.75 0 0 0 12 14.5Z"/><path d="M17.5 11.25a5.5 5.5 0 0 1-11 0M12 16.75V20M9 20h6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>',
+  triUp: '<path d="M12 6.5 19 17H5z"/>',
+  triDown: '<path d="m12 17.5-7-11h14z"/>',
+  dblUp:
+    '<path d="m6 14.5 6-6 6 6M6 19.5l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>',
+  dblDown:
+    '<path d="m6 4.5 6 6 6-6M6 9.5l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>',
+  book: '<path d="M6.5 3H19a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1H6.5A2.5 2.5 0 0 1 4 17.5v-12A2.5 2.5 0 0 1 6.5 3Z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M20 15H6.5A2.5 2.5 0 0 0 4 17.5" fill="none" stroke="currentColor" stroke-width="1.9"/>',
 };
 
 function createPadIcon(name) {
