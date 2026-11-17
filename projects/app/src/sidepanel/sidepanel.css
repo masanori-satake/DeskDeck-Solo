@@ -859,7 +859,7 @@ html {
 
 .flip-switch-housing {
   position: relative;
-  width: 132px;
+  width: 92px;
   height: 64px;
   background-color: #12141c;
   border: 2px solid var(--card-border);
@@ -875,7 +875,7 @@ html {
 }
 
 .flip-switch-base {
-  width: 116px;
+  width: 76px;
   height: 48px;
   background: radial-gradient(circle at 50% 50%, #2a2e40, #161824);
   border-radius: 8px;

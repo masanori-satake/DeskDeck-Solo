@@ -232,8 +232,8 @@ export const DECK_PRESETS = {
         pads: [
           { id: 'top', label: 'Top', iconSvg: 'dblUp' },
           { id: 'pgup', label: 'PgUp', iconSvg: 'triUp' },
-          { id: 'pgdn', label: 'PgDn', iconSvg: 'triDown' },
           { id: 'bot', label: 'Bot', iconSvg: 'dblDown' },
+          { id: 'pgdn', label: 'PgDn', iconSvg: 'triDown' },
         ],
         compact: true,
         dense: true,

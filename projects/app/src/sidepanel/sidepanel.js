@@ -252,10 +252,12 @@ function renderDeckSlots(deckId) {
   // upward) advances to the next page, a flick down goes back — the
   // pages move the way the finger pushes them.
   let touchStartY = null;
+  let touchStartX = null;
   container.addEventListener(
     'touchstart',
     (e) => {
       touchStartY = e.touches[0].clientY;
+      touchStartX = e.touches[0].clientX;
     },
     { passive: true }
   );
@@ -264,9 +266,15 @@ function renderDeckSlots(deckId) {
     (e) => {
       if (touchStartY === null) return;
       const deltaY = touchStartY - e.changedTouches[0].clientY;
-      if (deltaY > 50) goToPage(currentPage + 1);
-      else if (deltaY < -50) goToPage(currentPage - 1);
+      const deltaX = touchStartX - e.changedTouches[0].clientX;
+      // Predominantly vertical only: a horizontal knob drag that
+      // drifts a little vertically must not flip the page.
+      if (Math.abs(deltaY) > 50 && Math.abs(deltaY) > Math.abs(deltaX) * 1.5) {
+        if (deltaY > 0) goToPage(currentPage + 1);
+        else goToPage(currentPage - 1);
+      }
       touchStartY = null;
+      touchStartX = null;
     },
     { passive: true }
   );
@@ -884,7 +892,7 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
 
   const coverLabel = document.createElement('span');
   coverLabel.className = 'flip-switch-cover-label';
-  coverLabel.textContent = 'SWIPE ▶';
+  coverLabel.textContent = 'SWIPE ◀';
   cover.appendChild(coverLabel);
 
   // Switch base & lever inside
@@ -908,18 +916,14 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
   housing.appendChild(base);
   housing.appendChild(cover);
 
-  const statusText = document.createElement('span');
-  statusText.className = 'flip-switch-status';
-  statusText.textContent = isSwitchedOn ? 'ARMED / ON' : 'OFF';
-
   wrapper.appendChild(housing);
-  wrapper.appendChild(statusText);
   cardContainer.appendChild(wrapper);
 
   let isCoverOpen = false;
   let dragStartX = 0;
   let isCoverDragging = false;
   let didCoverDrag = false;
+  let suppressBaseClick = false;
 
   const setCoverOpen = (open) => {
     if (open === isCoverOpen) return;
@@ -931,48 +935,53 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
     if (appSettings.hapticFeedback) triggerHaptic(isCoverOpen ? 12 : 8);
   };
 
-  const onCoverPointerDown = (e) => {
+  const onHousingPointerDown = (e) => {
     isCoverDragging = true;
     didCoverDrag = false;
     dragStartX = e.clientX;
     try {
-      cover.setPointerCapture(e.pointerId);
+      housing.setPointerCapture(e.pointerId);
     } catch {
       // ignore
     }
   };
 
-  const onCoverPointerMove = (e) => {
+  const onHousingPointerMove = (e) => {
     if (!isCoverDragging) return;
     const deltaX = e.clientX - dragStartX;
 
-    if (deltaX > 15 && !isCoverOpen) {
+    if (deltaX < -15 && !isCoverOpen) {
       didCoverDrag = true;
       setCoverOpen(true);
-    } else if (deltaX < -15 && isCoverOpen) {
+    } else if (Math.abs(deltaX) > 15 && isCoverOpen) {
       didCoverDrag = true;
       setCoverOpen(false);
     }
   };
 
-  const onCoverPointerUp = (e) => {
+  const onHousingPointerUp = (e) => {
     if (isCoverDragging) {
       isCoverDragging = false;
+      if (didCoverDrag) suppressBaseClick = true;
       try {
-        cover.releasePointerCapture(e.pointerId);
+        housing.releasePointerCapture(e.pointerId);
       } catch {
         // ignore
       }
     }
   };
 
-  cover.addEventListener('pointerdown', onCoverPointerDown);
-  cover.addEventListener('pointermove', onCoverPointerMove);
-  cover.addEventListener('pointerup', onCoverPointerUp);
-  cover.addEventListener('pointercancel', onCoverPointerUp);
+  housing.addEventListener('pointerdown', onHousingPointerDown);
+  housing.addEventListener('pointermove', onHousingPointerMove);
+  housing.addEventListener('pointerup', onHousingPointerUp);
+  housing.addEventListener('pointercancel', onHousingPointerUp);
 
-  cover.addEventListener('click', () => {
+  // Tap toggles the cover. The handler sits on the housing (pointer
+  // capture retargets clicks there after any drag), and clicks that
+  // land on the base belong to the switch itself, not the cover.
+  housing.addEventListener('click', (e) => {
     if (didCoverDrag) return;
+    if (base.contains(e.target)) return;
     setCoverOpen(!isCoverOpen);
   });
 
@@ -983,6 +992,10 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
   });
 
   const toggleBase = () => {
+    if (suppressBaseClick) {
+      suppressBaseClick = false;
+      return;
+    }
     if (!isCoverOpen) {
       cover.classList.add('swipe-hint');
       setTimeout(() => cover.classList.remove('swipe-hint'), 400);
@@ -995,11 +1008,9 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
     if (newState) {
       lever.classList.add('active');
       statusLed.classList.add('active');
-      statusText.textContent = 'ARMED / ON';
     } else {
       lever.classList.remove('active');
       statusLed.classList.remove('active');
-      statusText.textContent = 'OFF';
     }
     base.setAttribute('aria-checked', String(newState));
 
