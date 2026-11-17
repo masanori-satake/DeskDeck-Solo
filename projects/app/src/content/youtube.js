@@ -212,34 +212,41 @@
   }
 
   /**
-   * Skip to next track/video
+   * Skip to next video
    */
   function nextTrack() {
-    const player = getYouTubePlayer();
+    // Click the player's own Next button whenever it exists. Do not gate
+    // on visibility (offsetParent): in tablet mode the control bar stays
+    // display:none until the screen is touched, which failed the check and
+    // silently fell back to a +10s seek. A "Next Video" button must never
+    // quietly become a seek button, so when no video navigation exists
+    // this deliberately does nothing.
     const nextBtn = document.querySelector('.ytp-next-button');
-
-    if (nextBtn && nextBtn.offsetParent !== null) {
+    if (nextBtn) {
       nextBtn.click();
-    } else if (player && typeof player.nextVideo === 'function') {
+      return;
+    }
+
+    const player = getYouTubePlayer();
+    if (player && typeof player.nextVideo === 'function') {
       player.nextVideo();
-    } else {
-      seek(10, true);
     }
   }
 
   /**
-   * Skip to previous track/video or seek -10s
+   * Skip to previous video
    */
   function prevTrack() {
-    const player = getYouTubePlayer();
+    // Same reasoning as nextTrack: no visibility gate, no seek fallback.
     const prevBtn = document.querySelector('.ytp-prev-button');
-
-    if (prevBtn && prevBtn.offsetParent !== null) {
+    if (prevBtn) {
       prevBtn.click();
-    } else if (player && typeof player.previousVideo === 'function') {
+      return;
+    }
+
+    const player = getYouTubePlayer();
+    if (player && typeof player.previousVideo === 'function') {
       player.previousVideo();
-    } else {
-      seek(-10, true);
     }
   }
 
