@@ -66,9 +66,9 @@ export const DECK_PRESETS = {
         label: 'Transport Pad Grid',
         defaultValue: {},
         action: 'pad_action',
+        compact: true,
         pads: [
-          { id: 'play', label: 'Play', icon: '▶' },
-          { id: 'pause', label: 'Pause', icon: '⏸' },
+          { id: 'play_pause', label: 'Play/Pause', icon: '⏯', wide: true },
           { id: 'back10', label: '-10s', icon: '⏪' },
           { id: 'fwd10', label: '+10s', icon: '⏩' },
         ],

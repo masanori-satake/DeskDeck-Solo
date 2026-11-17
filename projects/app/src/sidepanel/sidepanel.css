@@ -583,6 +583,16 @@ html {
   gap: 6px;
 }
 
+/* Compact grids (e.g. the media transport pads) use half-height pads:
+   transport controls are hit often and do not need full square targets. */
+.multipad-compact .multipad-button {
+  aspect-ratio: 2 / 1;
+}
+
+.multipad-button.pad-wide {
+  grid-column: span 2;
+}
+
 .multipad-button {
   aspect-ratio: 1 / 1;
   width: 100%;

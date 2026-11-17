@@ -854,11 +854,14 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
  */
 function renderMultiPadWidget(cardContainer, slot, _deckId) {
   const is4x4 = slot.type === 'pad4x4';
-  const gridCount = is4x4 ? 16 : 4;
+  // When a slot declares its own pad list, render exactly those pads
+  // (the transport grid has 3: one wide toggle plus two seek pads).
+  const gridCount = is4x4 ? 16 : slot.pads ? slot.pads.length : 4;
   const cols = is4x4 ? 4 : 2;
 
   const padGrid = document.createElement('div');
   padGrid.className = `multipad-grid multipad-${cols}x${cols}`;
+  if (slot.compact) padGrid.classList.add('multipad-compact');
 
   for (let i = 0; i < gridCount; i++) {
     const padDef = (slot.pads && slot.pads[i]) || {
@@ -869,6 +872,7 @@ function renderMultiPadWidget(cardContainer, slot, _deckId) {
 
     const padBtn = document.createElement('button');
     padBtn.className = 'multipad-button';
+    if (padDef.wide) padBtn.classList.add('pad-wide');
     padBtn.setAttribute('type', 'button');
     padBtn.setAttribute('data-pad-id', padDef.id);
     padBtn.setAttribute('aria-label', padDef.label);

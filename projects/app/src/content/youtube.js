@@ -330,6 +330,7 @@
         const padId = payload.padId;
         if (padId === 'play') play();
         else if (padId === 'pause') pause();
+        else if (padId === 'play_pause') togglePlayPause();
         // The ±10s pads always seek, even on YouTube; moving between
         // videos lives on the dedicated prev_track/next_track buttons.
         else if (padId === 'back10') seek(-10, true);
