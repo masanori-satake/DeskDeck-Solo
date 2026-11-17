@@ -120,11 +120,67 @@
       targetTime = Math.max(0, targetTime);
     }
 
+    const beforeTime =
+      player && typeof player.getCurrentTime === 'function'
+        ? player.getCurrentTime()
+        : video
+          ? video.currentTime
+          : targetTime;
+
     if (player && typeof player.seekTo === 'function') {
       player.seekTo(targetTime, true);
     } else if (video) {
       video.currentTime = targetTime;
     }
+
+    showSeekFeedback(video, targetTime - beforeTime, targetTime, duration);
+  }
+
+  let seekToastEl = null;
+  let seekToastTimer = null;
+
+  function formatClock(totalSeconds) {
+    const s = Math.max(0, Math.floor(totalSeconds || 0));
+    const hours = Math.floor(s / 3600);
+    const minutes = Math.floor((s % 3600) / 60);
+    const secs = s % 60;
+    const mm = hours > 0 ? String(minutes).padStart(2, '0') : String(minutes);
+    return `${hours > 0 ? `${hours}:` : ''}${mm}:${String(secs).padStart(2, '0')}`;
+  }
+
+  /**
+   * Brief on-video feedback after a seek ("+24s → 12:34 / 45:00"),
+   * shown for ~1.2s. Jog seeking in particular moves blind without it.
+   */
+  function showSeekFeedback(video, deltaSeconds, landedTime, totalDuration) {
+    if (!video) return;
+    const rect = video.getBoundingClientRect();
+    if (!rect || rect.width === 0 || rect.height === 0) return;
+
+    if (!seekToastEl) {
+      seekToastEl = document.createElement('div');
+      seekToastEl.style.cssText =
+        'position:fixed;z-index:2147483647;pointer-events:none;' +
+        'background:rgba(0,0,0,0.78);color:#fff;' +
+        'font:600 14px/1.4 system-ui,sans-serif;padding:8px 16px;' +
+        'border-radius:999px;transform:translateX(-50%);' +
+        'opacity:0;transition:opacity 0.18s ease;white-space:nowrap;';
+      document.documentElement.appendChild(seekToastEl);
+    }
+
+    const delta = Math.round(deltaSeconds);
+    const sign = delta >= 0 ? '+' : '-';
+    seekToastEl.textContent =
+      `${sign}${Math.abs(delta)}s → ` +
+      `${formatClock(landedTime)} / ${formatClock(totalDuration)}`;
+    seekToastEl.style.left = `${rect.left + rect.width / 2}px`;
+    seekToastEl.style.top = `${rect.top + Math.max(12, rect.height * 0.12)}px`;
+    seekToastEl.style.opacity = '1';
+
+    if (seekToastTimer) clearTimeout(seekToastTimer);
+    seekToastTimer = setTimeout(() => {
+      if (seekToastEl) seekToastEl.style.opacity = '0';
+    }, 1200);
   }
 
   /**
