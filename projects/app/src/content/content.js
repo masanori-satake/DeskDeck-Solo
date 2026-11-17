@@ -141,11 +141,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       else if (padId === 'fwd10' || padId === 'next') skipMediaTrack(10);
       else if (padId === 'pip') togglePictureInPicture();
       else if (padId === 'fullscreen') {
+        const wasFullscreen = !!document.fullscreenElement;
         if (!document.fullscreenElement) {
           document.documentElement.requestFullscreen().catch(() => {});
         } else {
           document.exitFullscreen().catch(() => {});
         }
+        if (!wasFullscreen) hintActivationIfNeeded(getPrimaryVideoElement());
       }
       // 'prev_video'/'next_video' intentionally do nothing on generic
       // pages: there is no playlist to move through. Site-specific
@@ -165,14 +167,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
     }
 
-    case 'toggle_fullscreen':
+    case 'toggle_fullscreen': {
+      const wasFullscreen = !!document.fullscreenElement;
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
       } else {
         document.exitFullscreen().catch(() => {});
       }
+      if (!wasFullscreen) hintActivationIfNeeded(getPrimaryVideoElement());
       sendResponse({ handled: true });
       break;
+    }
 
     case 'set_mic_level':
       setMicLevel(payload ? payload.value : 100);
@@ -378,6 +383,45 @@ function showSeekFeedback(video, deltaSeconds, landedTime, totalDuration) {
   }, 1200);
 }
 
+function showInfoToast(video, text) {
+  if (!video) return;
+  const rect = video.getBoundingClientRect();
+  if (!rect || rect.width === 0 || rect.height === 0) return;
+
+  if (!seekToastEl) {
+    seekToastEl = document.createElement('div');
+    seekToastEl.style.cssText =
+      'position:fixed;z-index:2147483647;pointer-events:none;' +
+      'background:rgba(0,0,0,0.78);color:#fff;' +
+      'font:600 14px/1.4 system-ui,sans-serif;padding:8px 16px;' +
+      'border-radius:999px;transform:translateX(-50%);' +
+      'opacity:0;transition:opacity 0.18s ease;white-space:nowrap;';
+    document.documentElement.appendChild(seekToastEl);
+  }
+
+  seekToastEl.textContent = text;
+  seekToastEl.style.left = `${rect.left + rect.width / 2}px`;
+  seekToastEl.style.top = `${rect.top + Math.max(12, rect.height * 0.12)}px`;
+  seekToastEl.style.opacity = '1';
+
+  if (seekToastTimer) clearTimeout(seekToastTimer);
+  seekToastTimer = setTimeout(() => {
+    if (seekToastEl) seekToastEl.style.opacity = '0';
+  }, 2400);
+}
+
+/**
+ * Fullscreen and PiP require a recent real touch inside the page
+ * (transient activation); a side-panel click does not count. When no
+ * activation is present the request will have been rejected, so say
+ * what to do instead of failing silently.
+ */
+function hintActivationIfNeeded(video) {
+  if (navigator.userActivation && !navigator.userActivation.isActive) {
+    showInfoToast(video, '先に動画をタッチしてから押してください');
+  }
+}
+
 function seekVideo(seconds, isRelative = true) {
   const video = getPrimaryVideoElement();
   if (video) {
@@ -429,6 +473,7 @@ async function togglePictureInPicture() {
       console.debug('Request PiP failed:', err);
     }
   }
+  hintActivationIfNeeded(video);
 }
 
 function setMicLevel(valPercent) {

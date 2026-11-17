@@ -183,6 +183,46 @@
     }, 1200);
   }
 
+  function showInfoToast(video, text) {
+    if (!video) return;
+    const rect = video.getBoundingClientRect();
+    if (!rect || rect.width === 0 || rect.height === 0) return;
+
+    if (!seekToastEl) {
+      seekToastEl = document.createElement('div');
+      seekToastEl.style.cssText =
+        'position:fixed;z-index:2147483647;pointer-events:none;' +
+        'background:rgba(0,0,0,0.78);color:#fff;' +
+        'font:600 14px/1.4 system-ui,sans-serif;padding:8px 16px;' +
+        'border-radius:999px;transform:translateX(-50%);' +
+        'opacity:0;transition:opacity 0.18s ease;white-space:nowrap;';
+      document.documentElement.appendChild(seekToastEl);
+    }
+
+    seekToastEl.textContent = text;
+    seekToastEl.style.left = `${rect.left + rect.width / 2}px`;
+    seekToastEl.style.top = `${rect.top + Math.max(12, rect.height * 0.12)}px`;
+    seekToastEl.style.opacity = '1';
+
+    if (seekToastTimer) clearTimeout(seekToastTimer);
+    seekToastTimer = setTimeout(() => {
+      if (seekToastEl) seekToastEl.style.opacity = '0';
+    }, 2400);
+  }
+
+  /**
+   * Fullscreen and PiP require a recent real touch inside the page
+   * (transient activation); a click in the side panel does not count,
+   * and even clicking the player's own button from a script cannot
+   * substitute. When no activation is present the request will have
+   * been rejected, so say what to do instead of failing silently.
+   */
+  function hintActivationIfNeeded(video) {
+    if (navigator.userActivation && !navigator.userActivation.isActive) {
+      showInfoToast(video, '先に動画をタッチしてから押してください');
+    }
+  }
+
   /**
    * Change playback speed (0.25x - 3.0x)
    * @param {number} rate - Target playback rate
@@ -226,6 +266,7 @@
     const pipBtn = document.querySelector('.ytp-pip-button');
     if (pipBtn) {
       pipBtn.click();
+      hintActivationIfNeeded(video);
       return;
     }
 
@@ -236,6 +277,7 @@
         console.debug('YouTube video.requestPictureInPicture failed:', err);
       }
     }
+    hintActivationIfNeeded(video);
   }
 
   /**
@@ -406,6 +448,7 @@
           // user activation the page needs, and in practice only works
           // after the video itself was clicked. The button path works
           // without that warm-up click.
+          const wasFullscreen = !!document.fullscreenElement;
           const fsBtn = document.querySelector('.ytp-fullscreen-button');
           if (fsBtn) {
             fsBtn.click();
@@ -414,6 +457,7 @@
           } else {
             document.exitFullscreen().catch(() => {});
           }
+          if (!wasFullscreen) hintActivationIfNeeded(getYouTubeVideo());
         } else if (padId === 'prev') prevTrack();
         else if (padId === 'next') nextTrack();
         else togglePlayPause();
