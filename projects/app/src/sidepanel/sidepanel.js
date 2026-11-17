@@ -1091,7 +1091,7 @@ function renderMultiPadWidget(cardContainer, slot, _deckId) {
     labelSpan.className = 'pad-label';
     labelSpan.textContent = padDef.label || '';
 
-    if (padDef.icon) padBtn.appendChild(iconSpan);
+    if (padDef.icon || padDef.iconSvg) padBtn.appendChild(iconSpan);
     if (padDef.label && !is4x4) padBtn.appendChild(labelSpan);
 
     const onPadDown = () => {
