@@ -153,7 +153,10 @@ function buildSlotCard(slot, deckId) {
   card.className = `slot-card slot-${slot.type}`;
   if (slot.dense) card.classList.add('slot-dense');
 
-  if (slot.type !== 'knob') {
+  // Pad grids carry no card title: area names like "Transport Pad Grid"
+  // tell the user nothing, and each page now has its own category title.
+  // The pads themselves are labelled.
+  if (slot.type !== 'knob' && slot.type !== 'pad2x2' && slot.type !== 'pad4x4') {
     const label = document.createElement('div');
     label.className = 'slot-label';
     label.textContent = slot.label;
@@ -204,12 +207,18 @@ function renderDeckSlots(deckId) {
   const track = document.createElement('div');
   track.className = 'pager-track';
 
-  pages.forEach((slotIds) => {
+  pages.forEach((pageDef) => {
     const page = document.createElement('div');
     page.className = 'pager-page';
+    if (pageDef.title) {
+      const title = document.createElement('div');
+      title.className = 'pager-page-title';
+      title.textContent = pageDef.title;
+      page.appendChild(title);
+    }
     const grid = document.createElement('div');
     grid.className = 'slots-grid pager-page-grid';
-    slotIds.forEach((id) => {
+    (pageDef.slots || []).forEach((id) => {
       const slot = slotById.get(id);
       if (slot) grid.appendChild(buildSlotCard(slot, deckId));
     });
@@ -356,7 +365,13 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
   if (muteBtn) {
     let muted = currentSlotStates[`${slot.id}_mute`] === true;
     const updateMuteUI = () => {
-      muteBtn.textContent = muted ? '🔇' : '🔊';
+      muteBtn.textContent = '';
+      const icon = createPadIcon(muted ? 'volumeOff' : 'volumeOn');
+      if (icon) {
+        muteBtn.appendChild(icon);
+      } else {
+        muteBtn.textContent = muted ? '🔇' : '🔊';
+      }
       toggleClass(muteBtn, 'muted', muted);
       muteBtn.setAttribute('aria-pressed', String(muted));
     };
@@ -1007,6 +1022,36 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
  * Pads are momentary action triggers: they flash while pressed and never
  * hold a persistent "on" state.
  */
+// Single-colour SVG symbols for pads and toggles. Emoji render small
+// and cheap at pad sizes; these draw crisply at any size in currentColor.
+const PAD_ICON_PATHS = {
+  playPause:
+    '<path d="M5 5.4v13.2c0 .8.9 1.3 1.6.9l9.2-6.6c.6-.4.6-1.4 0-1.8L6.6 4.5C5.9 4.1 5 4.6 5 5.4Z"/><rect x="17.6" y="5" width="2.3" height="14" rx="0.7"/><rect x="20.7" y="5" width="2.3" height="14" rx="0.7"/>',
+  seekBack: '<path d="M11.2 5 3.8 12l7.4 7V5Z"/><path d="M20.2 5 12.8 12l7.4 7V5Z"/>',
+  seekFwd: '<path d="m12.8 5 7.4 7-7.4 7V5Z"/><path d="m3.8 5 7.4 7-7.4 7V5Z"/>',
+  prev: '<rect x="4" y="5" width="2.4" height="14" rx="0.7"/><path d="M20 5.4v13.2c0 .8-.9 1.3-1.6.9L9.2 12.9a1.15 1.15 0 0 1 0-1.8l9.2-6.6c.7-.4 1.6.1 1.6.9Z"/>',
+  next: '<rect x="17.6" y="5" width="2.4" height="14" rx="0.7"/><path d="M4 5.4v13.2c0 .8.9 1.3 1.6.9l9.2-6.6a1.15 1.15 0 0 0 0-1.8L5.6 4.5C4.9 4.1 4 4.6 4 5.4Z"/>',
+  pip: '<rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="12.4" y="11.4" width="6.2" height="4.8" rx="1"/>',
+  fullscreen:
+    '<path d="M4 9.2V6a2 2 0 0 1 2-2h3.2M20 9.2V6a2 2 0 0 0-2-2h-3.2M4 14.8V18a2 2 0 0 0 2 2h3.2M20 14.8V18a2 2 0 0 1-2 2h-3.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
+  volumeOn:
+    '<path d="M4 9.6v4.8h3.4L12 18.5V5.5L7.4 9.6H4Z"/><path d="M15.4 9.4a3.8 3.8 0 0 1 0 5.2M18 7a7.6 7.6 0 0 1 0 10" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>',
+  volumeOff:
+    '<path d="M4 9.6v4.8h3.4L12 18.5V5.5L7.4 9.6H4Z"/><path d="m16 9.8 5.2 5.2M21.2 9.8 16 15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>',
+};
+
+function createPadIcon(name) {
+  if (typeof document.createElementNS !== 'function' || !PAD_ICON_PATHS[name]) {
+    return null;
+  }
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('class', 'pad-icon-svg');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.innerHTML = PAD_ICON_PATHS[name];
+  return svg;
+}
+
 function renderMultiPadWidget(cardContainer, slot, _deckId) {
   const is4x4 = slot.type === 'pad4x4';
   // When a slot declares its own pad list, render exactly those pads
@@ -1035,7 +1080,12 @@ function renderMultiPadWidget(cardContainer, slot, _deckId) {
 
     const iconSpan = document.createElement('span');
     iconSpan.className = 'pad-icon';
-    iconSpan.textContent = padDef.icon || '';
+    const svgIcon = padDef.iconSvg ? createPadIcon(padDef.iconSvg) : null;
+    if (svgIcon) {
+      iconSpan.appendChild(svgIcon);
+    } else {
+      iconSpan.textContent = padDef.icon || '';
+    }
 
     const labelSpan = document.createElement('span');
     labelSpan.className = 'pad-label';

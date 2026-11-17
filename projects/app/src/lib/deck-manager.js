@@ -14,12 +14,13 @@ export const DECK_PRESETS = {
     nameKey: 'deckMedia',
     title: 'Media Deck',
     accentColor: '#6366f1',
-    // Two flick-switched pages instead of one scrolling column.
-    // Page 2 (transport) is what you land on; flick down for the levels
-    // page (volume/speed/jog plus the PiP/Fullscreen pads).
+    // Titled flick pages, main control sandwiched by sub controls:
+    // [sub 1: levels] [main: transport] [sub 2: screen]. Similar items
+    // are never split across the two sub pages.
     pages: [
-      ['media_volume', 'media_speed', 'jog_seek', 'media_screen_pad'],
-      ['media_pad', 'media_video_nav'],
+      { title: '音量と速度', slots: ['media_volume', 'media_speed', 'jog_seek'] },
+      { title: '再生', slots: ['media_pad', 'media_video_nav'] },
+      { title: '画面', slots: ['media_screen_pad'] },
     ],
     initialPage: 1,
     slots: [
@@ -71,9 +72,9 @@ export const DECK_PRESETS = {
         compact: true,
         dense: true,
         pads: [
-          { id: 'play_pause', label: 'Play/Pause', icon: '⏯', wide: true, hero: true },
-          { id: 'back10', label: '-10s', icon: '⏪' },
-          { id: 'fwd10', label: '+10s', icon: '⏩' },
+          { id: 'play_pause', label: 'Play/Pause', iconSvg: 'playPause', wide: true, hero: true },
+          { id: 'back10', label: '-10s', iconSvg: 'seekBack' },
+          { id: 'fwd10', label: '+10s', iconSvg: 'seekFwd' },
         ],
       },
       {
@@ -85,8 +86,8 @@ export const DECK_PRESETS = {
         compact: true,
         dense: true,
         pads: [
-          { id: 'prev_video', label: 'Prev Video', icon: '⏮' },
-          { id: 'next_video', label: 'Next Video', icon: '⏭' },
+          { id: 'prev_video', label: 'Prev Video', iconSvg: 'prev' },
+          { id: 'next_video', label: 'Next Video', iconSvg: 'next' },
         ],
       },
       {
@@ -98,8 +99,8 @@ export const DECK_PRESETS = {
         compact: true,
         dense: true,
         pads: [
-          { id: 'pip', label: 'PiP', icon: '🖼️' },
-          { id: 'fullscreen', label: 'Fullscreen', icon: '⛶' },
+          { id: 'pip', label: 'PiP', iconSvg: 'pip' },
+          { id: 'fullscreen', label: 'Fullscreen', iconSvg: 'fullscreen' },
         ],
       },
     ],
@@ -109,6 +110,12 @@ export const DECK_PRESETS = {
     nameKey: 'deckMeeting',
     title: 'Meeting Deck',
     accentColor: '#10b981',
+    pages: [
+      { title: '音量', slots: ['mic_volume', 'broadcast_fader'] },
+      { title: '会議', slots: ['mic_mute', 'camera_toggle', 'meeting_pad', 'leave_call'] },
+      { title: '安全', slots: ['emergency_cut'] },
+    ],
+    initialPage: 1,
     slots: [
       {
         id: 'mic_volume',
@@ -191,6 +198,14 @@ export const DECK_PRESETS = {
     nameKey: 'deckReader',
     title: 'Reader Deck',
     accentColor: '#f59e0b',
+    pages: [
+      {
+        title: '表示',
+        slots: ['brightness_fader', 'dark_mode', 'contrast_guard', 'reader_toggle'],
+      },
+      { title: '読書', slots: ['reader_pad', 'reader_zoom'] },
+    ],
+    initialPage: 1,
     slots: [
       {
         id: 'reader_zoom',
@@ -265,6 +280,11 @@ export const DECK_PRESETS = {
     nameKey: 'deckAudio',
     title: 'Audio Deck',
     accentColor: '#ec4899',
+    pages: [
+      { title: '音量', slots: ['master_gain', 'main_fader', 'reset_eq'] },
+      { title: '演奏', slots: ['soundboard_pad', 'master_mute'] },
+    ],
+    initialPage: 1,
     slots: [
       {
         id: 'master_gain',
@@ -321,6 +341,11 @@ export const DECK_PRESETS = {
     nameKey: 'deckStandard',
     title: 'Standard Deck',
     accentColor: '#3b82f6',
+    pages: [
+      { title: 'ユーティリティ', slots: ['keep_awake', 'mute_bg_tabs', 'bookmark_page'] },
+      { title: 'スクロールとタブ', slots: ['standard_dial', 'speed_fader', 'tab_pad'] },
+    ],
+    initialPage: 1,
     slots: [
       {
         id: 'standard_dial',

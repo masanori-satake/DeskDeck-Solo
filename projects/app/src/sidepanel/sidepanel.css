@@ -635,12 +635,21 @@ html {
   height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   overflow: hidden;
+}
+
+.pager-page-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 2px 0 10px 2px;
 }
 
 .pager-page-grid {
   width: 100%;
+  flex: 1;
+  align-content: center;
 }
 
 .pager-dots {
@@ -772,12 +781,46 @@ html {
   line-height: 1;
 }
 
+.pad-icon-svg {
+  width: 30px;
+  height: 30px;
+  fill: currentColor;
+  display: block;
+}
+
+.multipad-button.pad-hero .pad-icon-svg {
+  width: 38px;
+  height: 38px;
+}
+
+.mute-toggle-btn {
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mute-toggle-btn .pad-icon-svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Two-column pad grids put their content on the left of each pad: the
+   panel sits on the right of the screen and the right thumb reaches in
+   from the right edge, covering the right side of whatever it taps.
+   Symbols and labels live where the thumb is not. */
+.multipad-2x2 .multipad-button {
+  align-items: flex-start;
+  padding-left: 16px;
+  text-align: left;
+}
+
 .multipad-4x4 .pad-icon {
   font-size: 14px;
 }
 
 .multipad-button .pad-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   /* Fixed light muted tone for the fixed dark pad background (see above). */
   color: #94a3b8;
