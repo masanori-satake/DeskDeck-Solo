@@ -14,13 +14,12 @@ export const DECK_PRESETS = {
     nameKey: 'deckMedia',
     title: 'Media Deck',
     accentColor: '#6366f1',
-    // Three flick-switched pages instead of one scrolling column.
+    // Two flick-switched pages instead of one scrolling column.
     // Page 2 (transport) is what you land on; flick down for the levels
-    // page (volume/speed/jog), flick up for everything else.
+    // page (volume/speed/jog plus the PiP/Fullscreen pads).
     pages: [
-      ['media_volume', 'media_speed', 'jog_seek'],
+      ['media_volume', 'media_speed', 'jog_seek', 'media_screen_pad'],
       ['media_pad', 'media_video_nav'],
-      ['media_screen_pad'],
     ],
     initialPage: 1,
     slots: [
@@ -72,7 +71,7 @@ export const DECK_PRESETS = {
         compact: true,
         dense: true,
         pads: [
-          { id: 'play_pause', label: 'Play/Pause', icon: '⏯', wide: true },
+          { id: 'play_pause', label: 'Play/Pause', icon: '⏯', wide: true, hero: true },
           { id: 'back10', label: '-10s', icon: '⏪' },
           { id: 'fwd10', label: '+10s', icon: '⏩' },
         ],

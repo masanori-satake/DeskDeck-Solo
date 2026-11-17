@@ -1028,6 +1028,7 @@ function renderMultiPadWidget(cardContainer, slot, _deckId) {
     const padBtn = document.createElement('button');
     padBtn.className = 'multipad-button';
     if (padDef.wide) padBtn.classList.add('pad-wide');
+    if (padDef.hero) padBtn.classList.add('pad-hero');
     padBtn.setAttribute('type', 'button');
     padBtn.setAttribute('data-pad-id', padDef.id);
     padBtn.setAttribute('aria-label', padDef.label);
