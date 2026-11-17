@@ -849,17 +849,16 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
 
 /**
  * Render 2x2 or 4x4 Multi-Pad Grid with 3D Tactile Press-Down Animation
+ * Pads are momentary action triggers: they flash while pressed and never
+ * hold a persistent "on" state.
  */
-function renderMultiPadWidget(cardContainer, slot, deckId) {
+function renderMultiPadWidget(cardContainer, slot, _deckId) {
   const is4x4 = slot.type === 'pad4x4';
   const gridCount = is4x4 ? 16 : 4;
   const cols = is4x4 ? 4 : 2;
 
   const padGrid = document.createElement('div');
   padGrid.className = `multipad-grid multipad-${cols}x${cols}`;
-
-  const padStates = { ...(currentSlotStates[slot.id] || {}) };
-  currentSlotStates[slot.id] = padStates;
 
   for (let i = 0; i < gridCount; i++) {
     const padDef = (slot.pads && slot.pads[i]) || {
@@ -873,11 +872,6 @@ function renderMultiPadWidget(cardContainer, slot, deckId) {
     padBtn.setAttribute('type', 'button');
     padBtn.setAttribute('data-pad-id', padDef.id);
     padBtn.setAttribute('aria-label', padDef.label);
-    padBtn.setAttribute('aria-pressed', String(!!padStates[padDef.id]));
-
-    if (padStates[padDef.id]) {
-      padBtn.classList.add('active');
-    }
 
     const iconSpan = document.createElement('span');
     iconSpan.className = 'pad-icon';
@@ -903,19 +897,13 @@ function renderMultiPadWidget(cardContainer, slot, deckId) {
     padBtn.addEventListener('pointercancel', onPadUp);
 
     padBtn.addEventListener('click', () => {
-      const activeState = !padStates[padDef.id];
-      padStates[padDef.id] = activeState;
-      currentSlotStates[slot.id] = padStates;
+      // Momentary flash only. A persistent lit state would claim something
+      // about the page (e.g. "now playing") that the pad cannot know, and
+      // it drifts out of sync as soon as the page is operated directly.
+      padBtn.classList.add('active');
+      setTimeout(() => padBtn.classList.remove('active'), 180);
 
-      if (activeState) {
-        padBtn.classList.add('active');
-      } else {
-        padBtn.classList.remove('active');
-      }
-      padBtn.setAttribute('aria-pressed', String(activeState));
-
-      saveDeckSlotStates(deckId, currentSlotStates);
-      dispatchDeckAction(slot.action, { padId: padDef.id, index: i, active: activeState });
+      dispatchDeckAction(slot.action, { padId: padDef.id, index: i });
 
       if (appSettings.soundEffects) playButtonSound();
       if (appSettings.hapticFeedback) triggerHaptic(20);
