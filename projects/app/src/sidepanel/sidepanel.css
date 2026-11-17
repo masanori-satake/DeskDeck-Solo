@@ -552,6 +552,22 @@ html {
   box-shadow: 0 0 8px var(--primary-light);
 }
 
+/* The home tick (e.g. 1.0x on Playback Speed) stays amber so the eye
+   finds the "back to normal" position instantly, even when another
+   tick is the active one. Amber is the Solo series accent colour. */
+.scale-tick-line.home {
+  background-color: #e8b33d;
+}
+
+.scale-tick-wrapper.active .scale-tick-line.home {
+  background-color: #e8b33d;
+  box-shadow: 0 0 8px rgba(232, 179, 61, 0.85);
+}
+
+.scale-tick-label.home {
+  color: #e8b33d;
+}
+
 .scale-tick-label {
   position: absolute;
   bottom: 3px;

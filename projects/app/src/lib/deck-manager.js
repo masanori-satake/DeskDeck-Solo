@@ -47,6 +47,7 @@ export const DECK_PRESETS = {
         step: 0.25,
         unit: 'x',
         discrete: true,
+        homeValue: 1.0,
         action: 'set_speed',
         dense: true,
       },

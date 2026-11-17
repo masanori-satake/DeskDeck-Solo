@@ -526,13 +526,18 @@ function renderDiscreteKnobWidget(cardContainer, slot, deckId) {
     tickWrapper.className = 'scale-tick-wrapper';
     tickWrapper.setAttribute('data-index', String(idx));
 
+    const isHome = slot.homeValue !== undefined && Math.abs(optVal - slot.homeValue) < 1e-6;
     const isMajor =
-      idx === 0 || idx === options.length - 1 || optVal === 1.0 || optVal === slot.defaultValue;
+      idx === 0 ||
+      idx === options.length - 1 ||
+      optVal === 1.0 ||
+      optVal === slot.defaultValue ||
+      isHome;
     const tickLine = document.createElement('div');
-    tickLine.className = `scale-tick-line ${isMajor ? 'major' : 'minor'}`;
+    tickLine.className = `scale-tick-line ${isMajor ? 'major' : 'minor'}${isHome ? ' home' : ''}`;
 
     const tickLabel = document.createElement('span');
-    tickLabel.className = 'scale-tick-label';
+    tickLabel.className = `scale-tick-label${isHome ? ' home' : ''}`;
     if (isMajor) {
       tickLabel.textContent = `${optVal}${slot.unit || ''}`;
     }
