@@ -15,8 +15,8 @@ export const DECK_PRESETS = {
     title: 'Media Deck',
     accentColor: '#6366f1',
     // Three flick-switched pages instead of one scrolling column.
-    // Page 2 (transport) is what you land on; flick up for the levels
-    // page (volume/speed/jog), flick down for everything else.
+    // Page 2 (transport) is what you land on; flick down for the levels
+    // page (volume/speed/jog), flick up for everything else.
     pages: [
       ['media_volume', 'media_speed', 'jog_seek'],
       ['media_pad', 'media_video_nav'],
@@ -69,6 +69,7 @@ export const DECK_PRESETS = {
         label: 'Transport Pad Grid',
         defaultValue: {},
         action: 'pad_action',
+        compact: true,
         dense: true,
         pads: [
           { id: 'play_pause', label: 'Play/Pause', icon: '⏯', wide: true },
@@ -82,6 +83,7 @@ export const DECK_PRESETS = {
         label: 'Video Navigation',
         defaultValue: {},
         action: 'pad_action',
+        compact: true,
         dense: true,
         pads: [
           { id: 'prev_video', label: 'Prev Video', icon: '⏮' },
@@ -94,6 +96,7 @@ export const DECK_PRESETS = {
         label: 'Screen',
         defaultValue: {},
         action: 'pad_action',
+        compact: true,
         dense: true,
         pads: [
           { id: 'pip', label: 'PiP', icon: '🖼️' },

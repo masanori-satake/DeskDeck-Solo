@@ -239,8 +239,9 @@ function renderDeckSlots(deckId) {
   }
   goToPage(currentPage);
 
-  // Flick navigation: flick up goes to the previous page, flick down to
-  // the next page (the transport page sits in the middle as the start).
+  // Flick navigation, following the finger: a flick up (finger sweeps
+  // upward) advances to the next page, a flick down goes back — the
+  // pages move the way the finger pushes them.
   let touchStartY = null;
   container.addEventListener(
     'touchstart',
@@ -254,8 +255,8 @@ function renderDeckSlots(deckId) {
     (e) => {
       if (touchStartY === null) return;
       const deltaY = touchStartY - e.changedTouches[0].clientY;
-      if (deltaY > 50) goToPage(currentPage - 1);
-      else if (deltaY < -50) goToPage(currentPage + 1);
+      if (deltaY > 50) goToPage(currentPage + 1);
+      else if (deltaY < -50) goToPage(currentPage - 1);
       touchStartY = null;
     },
     { passive: true }
