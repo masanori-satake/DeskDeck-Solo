@@ -136,6 +136,18 @@ async function loadAndRenderActiveDeck(deckId) {
  *
  * @param {string} deckId - Identifier used to persist slot state.
  */
+// classList.toggle with a force flag, with a fallback for environments
+// whose classList only carries add/remove.
+function toggleClass(el, name, force) {
+  if (el.classList && typeof el.classList.toggle === 'function') {
+    el.classList.toggle(name, force);
+  } else if (force) {
+    el.classList.add(name);
+  } else {
+    el.classList.remove(name);
+  }
+}
+
 function buildSlotCard(slot, deckId) {
   const card = document.createElement('div');
   card.className = `slot-card slot-${slot.type}`;
@@ -172,9 +184,7 @@ function renderDeckSlots(deckId) {
   container.innerHTML = '';
   container.classList.remove('pager-viewport');
   const workspace =
-    typeof document.querySelector === 'function'
-      ? document.querySelector('.deck-workspace')
-      : null;
+    typeof document.querySelector === 'function' ? document.querySelector('.deck-workspace') : null;
   if (workspace) workspace.classList.remove('paged');
 
   const pages = currentDeckPreset.pages;
@@ -225,7 +235,7 @@ function renderDeckSlots(deckId) {
   function goToPage(i) {
     currentPage = Math.max(0, Math.min(pages.length - 1, i));
     track.style.transform = `translateY(${-currentPage * 100}%)`;
-    dotEls.forEach((d, j) => d.classList.toggle('active', j === currentPage));
+    dotEls.forEach((d, j) => toggleClass(d, 'active', j === currentPage));
   }
   goToPage(currentPage);
 
@@ -346,7 +356,7 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
     let muted = currentSlotStates[`${slot.id}_mute`] === true;
     const updateMuteUI = () => {
       muteBtn.textContent = muted ? '🔇' : '🔊';
-      muteBtn.classList.toggle('muted', muted);
+      toggleClass(muteBtn, 'muted', muted);
       muteBtn.setAttribute('aria-pressed', String(muted));
     };
     updateMuteUI();
@@ -373,6 +383,13 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
 
   updateWheelUI(val);
 
+  // Feedback ticks fire only when the value crosses a coarse step
+  // (range/20, so 5 units on a 0-100 control), not on every step of the
+  // drag — ticking on every unit makes the sound machine-gun while
+  // sliding and the feedback becomes noise.
+  const tickStep = Math.max(slot.step || 1, (slot.max - slot.min) / 20);
+  let lastTickBucket = Math.floor(val / tickStep);
+
   const applyValue = (newVal) => {
     if (newVal === val) return;
 
@@ -382,8 +399,12 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
     saveDeckSlotStates(deckId, currentSlotStates);
     dispatchDeckAction(slot.action, { value: val });
 
-    if (appSettings.soundEffects) playKnobTickSound();
-    if (appSettings.hapticFeedback) triggerHaptic(8);
+    const bucket = Math.floor(val / tickStep);
+    if (bucket !== lastTickBucket) {
+      lastTickBucket = bucket;
+      if (appSettings.soundEffects) playKnobTickSound();
+      if (appSettings.hapticFeedback) triggerHaptic(8);
+    }
   };
 
   let isDragging = false;
@@ -730,6 +751,10 @@ function renderFaderWidget(cardContainer, slot, deckId) {
 
   updateFaderUI(val);
 
+  // Same coarse-step tick gating as the wheel control (range/20).
+  const faderTickStep = Math.max(slot.step || 1, (slot.max - slot.min) / 20);
+  let lastFaderTickBucket = Math.floor(val / faderTickStep);
+
   const applyFaderValue = (newVal) => {
     if (newVal === val) return;
 
@@ -739,8 +764,12 @@ function renderFaderWidget(cardContainer, slot, deckId) {
     saveDeckSlotStates(deckId, currentSlotStates);
     dispatchDeckAction(slot.action, { value: val });
 
-    if (appSettings.soundEffects) playKnobTickSound();
-    if (appSettings.hapticFeedback) triggerHaptic(8);
+    const bucket = Math.floor(val / faderTickStep);
+    if (bucket !== lastFaderTickBucket) {
+      lastFaderTickBucket = bucket;
+      if (appSettings.soundEffects) playKnobTickSound();
+      if (appSettings.hapticFeedback) triggerHaptic(8);
+    }
   };
 
   let isDragging = false;
