@@ -14,13 +14,14 @@ export const DECK_PRESETS = {
     nameKey: 'deckMedia',
     title: 'Media Deck',
     accentColor: '#6366f1',
-    // Titled flick pages, main control sandwiched by sub controls:
-    // [sub 1: levels] [main: transport] [sub 2: screen]. Similar items
-    // are never split across the two sub pages.
+    // Two titled pages: the sub page carries levels and screen, the
+    // main page is transport only.
     pages: [
-      { title: '音量と速度', slots: ['media_volume', 'media_speed', 'jog_seek'] },
+      {
+        title: '音量・速度・画面',
+        slots: ['media_volume', 'media_speed', 'jog_seek', 'media_screen_pad'],
+      },
       { title: '再生', slots: ['media_pad', 'media_video_nav'] },
-      { title: '画面', slots: ['media_screen_pad'] },
     ],
     initialPage: 1,
     slots: [
@@ -112,8 +113,8 @@ export const DECK_PRESETS = {
     accentColor: '#10b981',
     pages: [
       { title: '音量', slots: ['mic_volume', 'broadcast_fader'] },
-      { title: '会議', slots: ['mic_mute', 'camera_toggle', 'meeting_pad', 'leave_call'] },
-      { title: '安全', slots: ['emergency_cut'] },
+      { title: '会議', slots: ['mic_mute', 'camera_toggle', 'meeting_pad'] },
+      { title: '安全', slots: ['emergency_cut', 'leave_call'] },
     ],
     initialPage: 1,
     slots: [
@@ -316,6 +317,7 @@ export const DECK_PRESETS = {
         defaultValue: {},
         action: 'soundboard_trigger',
         dense: true,
+        compact: true,
       },
       {
         id: 'master_mute',

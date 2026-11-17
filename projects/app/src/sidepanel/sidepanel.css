@@ -698,6 +698,22 @@ html {
   aspect-ratio: 4 / 1;
 }
 
+/* The hero pad gets extra height back: it is a two-tier button — a big
+   symbol on the first tier, its name in readable type on the second. */
+.multipad-compact .multipad-button.pad-hero {
+  aspect-ratio: 3 / 1;
+}
+
+.multipad-button.pad-hero .pad-icon-svg {
+  width: 44px;
+  height: 44px;
+}
+
+.multipad-button.pad-hero .pad-label {
+  font-size: 13px;
+  font-weight: 700;
+}
+
 /* Dense cards drop the default 160px minimum height and use tighter
    padding, for decks designed to fit on one screen without scrolling. */
 .slot-card.slot-dense {

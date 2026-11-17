@@ -1,6 +1,6 @@
 {
   "name": "deskdeck-solo",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Chromebook tablet mode virtual hardware deck Chrome extension",
   "type": "module",
   "private": true,

@@ -224,6 +224,30 @@
   }
 
   /**
+   * Tap an element the way a finger would: the full pointer/mouse
+   * sequence, not a bare click(). Some player controls arm their
+   * handlers on pointerdown and ignore a synthetic click alone.
+   */
+  function tapElement(el) {
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const opts = {
+      bubbles: true,
+      cancelable: true,
+      clientX: rect.left + rect.width / 2,
+      clientY: rect.top + rect.height / 2,
+      pointerId: 1,
+      pointerType: 'touch',
+      isPrimary: true,
+    };
+    el.dispatchEvent(new PointerEvent('pointerdown', opts));
+    el.dispatchEvent(new MouseEvent('mousedown', opts));
+    el.dispatchEvent(new PointerEvent('pointerup', opts));
+    el.dispatchEvent(new MouseEvent('mouseup', opts));
+    el.dispatchEvent(new MouseEvent('click', opts));
+  }
+
+  /**
    * Change playback speed (0.25x - 3.0x)
    * @param {number} rate - Target playback rate
    */
@@ -265,19 +289,22 @@
     // rejection is only debug-logged.
     const pipBtn = document.querySelector('.ytp-pip-button');
     if (pipBtn) {
-      pipBtn.click();
-      hintActivationIfNeeded(video);
-      return;
-    }
-
-    if (video && document.pictureInPictureEnabled) {
+      tapElement(pipBtn);
+    } else if (video && document.pictureInPictureEnabled) {
       try {
         await video.requestPictureInPicture();
       } catch (err) {
         console.debug('YouTube video.requestPictureInPicture failed:', err);
       }
     }
-    hintActivationIfNeeded(video);
+
+    // Verify instead of guessing: if PiP did not engage, say so on the
+    // video itself rather than failing silently.
+    setTimeout(() => {
+      if (!document.pictureInPictureElement) {
+        showInfoToast(video, 'PiPにできませんでした。動画タッチ直後に押してください');
+      }
+    }, 900);
   }
 
   /**
@@ -451,13 +478,22 @@
           const wasFullscreen = !!document.fullscreenElement;
           const fsBtn = document.querySelector('.ytp-fullscreen-button');
           if (fsBtn) {
-            fsBtn.click();
+            tapElement(fsBtn);
           } else if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen().catch(() => {});
           } else {
             document.exitFullscreen().catch(() => {});
           }
-          if (!wasFullscreen) hintActivationIfNeeded(getYouTubeVideo());
+          if (!wasFullscreen) {
+            // Verify instead of guessing: if fullscreen did not engage,
+            // tell the user on the video itself.
+            const video = getYouTubeVideo();
+            setTimeout(() => {
+              if (!document.fullscreenElement) {
+                showInfoToast(video, '全画面にできませんでした。動画タッチ直後に押してください');
+              }
+            }, 900);
+          }
         } else if (padId === 'prev') prevTrack();
         else if (padId === 'next') nextTrack();
         else togglePlayPause();
