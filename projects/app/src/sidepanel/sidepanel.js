@@ -145,6 +145,7 @@ function renderDeckSlots(deckId) {
   currentDeckPreset.slots.forEach((slot) => {
     const card = document.createElement('div');
     card.className = `slot-card slot-${slot.type}`;
+    if (slot.dense) card.classList.add('slot-dense');
 
     if (slot.type !== 'knob') {
       const label = document.createElement('div');

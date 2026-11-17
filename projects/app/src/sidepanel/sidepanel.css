@@ -593,6 +593,23 @@ html {
   grid-column: span 2;
 }
 
+/* A wide pad in a compact grid is twice as wide as the other pads, so it
+   needs half their aspect ratio again to end up the same height. */
+.multipad-compact .multipad-button.pad-wide {
+  aspect-ratio: 4 / 1;
+}
+
+/* Dense cards drop the default 160px minimum height and use tighter
+   padding, for decks designed to fit on one screen without scrolling. */
+.slot-card.slot-dense {
+  min-height: 0;
+  padding: 10px 12px;
+}
+
+.slot-card.slot-knob.slot-dense {
+  min-height: 60px;
+}
+
 .multipad-button {
   aspect-ratio: 1 / 1;
   width: 100%;

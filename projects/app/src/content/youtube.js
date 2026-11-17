@@ -332,10 +332,19 @@
         else if (padId === 'pause') pause();
         else if (padId === 'play_pause') togglePlayPause();
         // The ±10s pads always seek, even on YouTube; moving between
-        // videos lives on the dedicated prev_track/next_track buttons.
+        // videos lives on the dedicated video navigation pads.
         else if (padId === 'back10') seek(-10, true);
         else if (padId === 'fwd10') seek(10, true);
-        else if (padId === 'prev') prevTrack();
+        else if (padId === 'prev_video') prevTrack();
+        else if (padId === 'next_video') nextTrack();
+        else if (padId === 'pip') togglePip();
+        else if (padId === 'fullscreen') {
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+          } else {
+            document.exitFullscreen().catch(() => {});
+          }
+        } else if (padId === 'prev') prevTrack();
         else if (padId === 'next') nextTrack();
         else togglePlayPause();
         return true;

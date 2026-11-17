@@ -25,6 +25,7 @@ export const DECK_PRESETS = {
         step: 1,
         unit: '%',
         action: 'set_volume',
+        dense: true,
       },
       {
         id: 'media_speed',
@@ -37,10 +38,15 @@ export const DECK_PRESETS = {
         unit: 'x',
         discrete: true,
         action: 'set_speed',
+        dense: true,
       },
       {
+        // Was a tall vertical fader until 0.1.9. The vertical fader widget
+        // still exists (Meeting/Reader use it), but on the Media deck it
+        // cost ~300px and forced scrolling; a horizontal knob keeps the
+        // whole deck on one screen.
         id: 'media_fader',
-        type: 'fader',
+        type: 'knob',
         label: 'Playback Fader',
         min: 0,
         max: 100,
@@ -48,6 +54,7 @@ export const DECK_PRESETS = {
         step: 1,
         unit: '%',
         action: 'set_fader',
+        dense: true,
       },
       {
         id: 'jog_seek',
@@ -59,6 +66,7 @@ export const DECK_PRESETS = {
         step: 1,
         unit: '',
         action: 'seek_dial',
+        dense: true,
       },
       {
         id: 'media_pad',
@@ -67,6 +75,7 @@ export const DECK_PRESETS = {
         defaultValue: {},
         action: 'pad_action',
         compact: true,
+        dense: true,
         pads: [
           { id: 'play_pause', label: 'Play/Pause', icon: '⏯', wide: true },
           { id: 'back10', label: '-10s', icon: '⏪' },
@@ -74,20 +83,30 @@ export const DECK_PRESETS = {
         ],
       },
       {
-        id: 'media_prev_video',
-        type: 'button',
-        label: 'Previous Video',
-        icon: '⏮',
-        variant: 'secondary',
-        action: 'prev_track',
+        id: 'media_video_nav',
+        type: 'pad2x2',
+        label: 'Video Navigation',
+        defaultValue: {},
+        action: 'pad_action',
+        compact: true,
+        dense: true,
+        pads: [
+          { id: 'prev_video', label: 'Prev Video', icon: '⏮' },
+          { id: 'next_video', label: 'Next Video', icon: '⏭' },
+        ],
       },
       {
-        id: 'media_next_video',
-        type: 'button',
-        label: 'Next Video',
-        icon: '⏭',
-        variant: 'secondary',
-        action: 'next_track',
+        id: 'media_screen_pad',
+        type: 'pad2x2',
+        label: 'Screen',
+        defaultValue: {},
+        action: 'pad_action',
+        compact: true,
+        dense: true,
+        pads: [
+          { id: 'pip', label: 'PiP', icon: '🖼️' },
+          { id: 'fullscreen', label: 'Fullscreen', icon: '⛶' },
+        ],
       },
       {
         id: 'media_mute',
@@ -95,22 +114,7 @@ export const DECK_PRESETS = {
         label: 'Soft Mute',
         defaultValue: false,
         action: 'toggle_mute',
-      },
-      {
-        id: 'media_pip',
-        type: 'button',
-        label: 'Picture-in-Picture',
-        icon: '🖼️',
-        variant: 'secondary',
-        action: 'toggle_pip',
-      },
-      {
-        id: 'media_fullscreen',
-        type: 'button',
-        label: 'Fullscreen',
-        icon: '⛶',
-        variant: 'secondary',
-        action: 'toggle_fullscreen',
+        dense: true,
       },
     ],
   },

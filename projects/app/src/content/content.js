@@ -139,7 +139,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       // pages; keep them as aliases of the renamed back10/fwd10 pads.
       else if (padId === 'back10' || padId === 'prev') skipMediaTrack(-10);
       else if (padId === 'fwd10' || padId === 'next') skipMediaTrack(10);
-      else toggleMediaPlayback();
+      else if (padId === 'pip') togglePictureInPicture();
+      else if (padId === 'fullscreen') {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+      // 'prev_video'/'next_video' intentionally do nothing on generic
+      // pages: there is no playlist to move through. Site-specific
+      // handlers (YouTube) intercept pad_action before this point.
+      else if (padId === 'prev_video' || padId === 'next_video') {
+        /* no-op on generic pages */
+      } else toggleMediaPlayback();
       sendResponse({ handled: true });
       break;
     }
