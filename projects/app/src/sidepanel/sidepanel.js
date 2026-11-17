@@ -136,40 +136,131 @@ async function loadAndRenderActiveDeck(deckId) {
  *
  * @param {string} deckId - Identifier used to persist slot state.
  */
+function buildSlotCard(slot, deckId) {
+  const card = document.createElement('div');
+  card.className = `slot-card slot-${slot.type}`;
+  if (slot.dense) card.classList.add('slot-dense');
+
+  if (slot.type !== 'knob') {
+    const label = document.createElement('div');
+    label.className = 'slot-label';
+    label.textContent = slot.label;
+    card.appendChild(label);
+  }
+
+  if (slot.type === 'knob') {
+    renderKnobWidget(card, slot, deckId);
+  } else if (slot.type === 'fader') {
+    renderFaderWidget(card, slot, deckId);
+  } else if (slot.type === 'switch') {
+    renderSwitchWidget(card, slot, deckId);
+  } else if (slot.type === 'flip_switch') {
+    renderFlipSwitchWidget(card, slot, deckId);
+  } else if (slot.type === 'pad2x2' || slot.type === 'pad4x4') {
+    renderMultiPadWidget(card, slot, deckId);
+  } else if (slot.type === 'button') {
+    renderButtonWidget(card, slot, deckId);
+  }
+
+  return card;
+}
+
 function renderDeckSlots(deckId) {
   const container = document.getElementById('slotsContainer');
   if (!container || !currentDeckPreset) return;
 
   container.innerHTML = '';
+  container.classList.remove('pager-viewport');
+  const workspace =
+    typeof document.querySelector === 'function'
+      ? document.querySelector('.deck-workspace')
+      : null;
+  if (workspace) workspace.classList.remove('paged');
 
-  currentDeckPreset.slots.forEach((slot) => {
-    const card = document.createElement('div');
-    card.className = `slot-card slot-${slot.type}`;
-    if (slot.dense) card.classList.add('slot-dense');
+  const pages = currentDeckPreset.pages;
+  if (!pages || pages.length === 0) {
+    currentDeckPreset.slots.forEach((slot) => {
+      container.appendChild(buildSlotCard(slot, deckId));
+    });
+    return;
+  }
 
-    if (slot.type !== 'knob') {
-      const label = document.createElement('div');
-      label.className = 'slot-label';
-      label.textContent = slot.label;
-      card.appendChild(label);
-    }
+  // Paged layout: the deck's slots are grouped into full-height pages
+  // switched by flicking, instead of one long smooth-scrolling column.
+  container.classList.add('pager-viewport');
+  if (workspace) workspace.classList.add('paged');
 
-    if (slot.type === 'knob') {
-      renderKnobWidget(card, slot, deckId);
-    } else if (slot.type === 'fader') {
-      renderFaderWidget(card, slot, deckId);
-    } else if (slot.type === 'switch') {
-      renderSwitchWidget(card, slot, deckId);
-    } else if (slot.type === 'flip_switch') {
-      renderFlipSwitchWidget(card, slot, deckId);
-    } else if (slot.type === 'pad2x2' || slot.type === 'pad4x4') {
-      renderMultiPadWidget(card, slot, deckId);
-    } else if (slot.type === 'button') {
-      renderButtonWidget(card, slot, deckId);
-    }
+  const slotById = new Map(currentDeckPreset.slots.map((s) => [s.id, s]));
+  const track = document.createElement('div');
+  track.className = 'pager-track';
 
-    container.appendChild(card);
+  pages.forEach((slotIds) => {
+    const page = document.createElement('div');
+    page.className = 'pager-page';
+    const grid = document.createElement('div');
+    grid.className = 'slots-grid pager-page-grid';
+    slotIds.forEach((id) => {
+      const slot = slotById.get(id);
+      if (slot) grid.appendChild(buildSlotCard(slot, deckId));
+    });
+    page.appendChild(grid);
+    track.appendChild(page);
   });
+  container.appendChild(track);
+
+  const dots = document.createElement('div');
+  dots.className = 'pager-dots';
+  container.appendChild(dots);
+
+  let currentPage = Math.min(currentDeckPreset.initialPage || 0, pages.length - 1);
+  const dotEls = pages.map((_, i) => {
+    const dot = document.createElement('button');
+    dot.className = 'pager-dot';
+    dot.setAttribute('aria-label', `Page ${i + 1}`);
+    dot.addEventListener('click', () => goToPage(i));
+    dots.appendChild(dot);
+    return dot;
+  });
+
+  function goToPage(i) {
+    currentPage = Math.max(0, Math.min(pages.length - 1, i));
+    track.style.transform = `translateY(${-currentPage * 100}%)`;
+    dotEls.forEach((d, j) => d.classList.toggle('active', j === currentPage));
+  }
+  goToPage(currentPage);
+
+  // Flick navigation: flick up goes to the previous page, flick down to
+  // the next page (the transport page sits in the middle as the start).
+  let touchStartY = null;
+  container.addEventListener(
+    'touchstart',
+    (e) => {
+      touchStartY = e.touches[0].clientY;
+    },
+    { passive: true }
+  );
+  container.addEventListener(
+    'touchend',
+    (e) => {
+      if (touchStartY === null) return;
+      const deltaY = touchStartY - e.changedTouches[0].clientY;
+      if (deltaY > 50) goToPage(currentPage - 1);
+      else if (deltaY < -50) goToPage(currentPage + 1);
+      touchStartY = null;
+    },
+    { passive: true }
+  );
+  let lastWheelNav = 0;
+  container.addEventListener(
+    'wheel',
+    (e) => {
+      const now = Date.now();
+      if (Math.abs(e.deltaY) < 24 || now - lastWheelNav < 450) return;
+      lastWheelNav = now;
+      goToPage(currentPage + (e.deltaY > 0 ? 1 : -1));
+    },
+    { passive: true }
+  );
 }
 
 /**
@@ -238,8 +329,36 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
   container.appendChild(wheelControl);
   cardContainer.appendChild(container);
 
+  // Optional merged mute toggle living on the same card (Master Volume
+  // carries Soft Mute this way instead of a separate switch slot).
+  let muteBtn = null;
+  if (slot.muteAction) {
+    muteBtn = document.createElement('button');
+    muteBtn.className = 'mute-toggle-btn';
+    muteBtn.setAttribute('aria-label', 'Mute');
+    cardContainer.appendChild(muteBtn);
+  }
+
   let val =
     currentSlotStates[slot.id] !== undefined ? currentSlotStates[slot.id] : slot.defaultValue;
+
+  if (muteBtn) {
+    let muted = currentSlotStates[`${slot.id}_mute`] === true;
+    const updateMuteUI = () => {
+      muteBtn.textContent = muted ? '🔇' : '🔊';
+      muteBtn.classList.toggle('muted', muted);
+      muteBtn.setAttribute('aria-pressed', String(muted));
+    };
+    updateMuteUI();
+    muteBtn.addEventListener('click', () => {
+      muted = !muted;
+      currentSlotStates[`${slot.id}_mute`] = muted;
+      saveDeckSlotStates(deckId, currentSlotStates);
+      updateMuteUI();
+      dispatchDeckAction(slot.muteAction, { enabled: muted });
+      if (appSettings.hapticFeedback) triggerHaptic(10);
+    });
+  }
   let unroundedVal = val;
 
   const updateWheelUI = (value) => {

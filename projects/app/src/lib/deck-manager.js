@@ -14,6 +14,15 @@ export const DECK_PRESETS = {
     nameKey: 'deckMedia',
     title: 'Media Deck',
     accentColor: '#6366f1',
+    // Three flick-switched pages instead of one scrolling column.
+    // Page 2 (transport) is what you land on; flick up for the levels
+    // page (volume/speed/jog), flick down for everything else.
+    pages: [
+      ['media_volume', 'media_speed', 'jog_seek'],
+      ['media_pad', 'media_video_nav'],
+      ['media_screen_pad'],
+    ],
+    initialPage: 1,
     slots: [
       {
         id: 'media_volume',
@@ -25,6 +34,7 @@ export const DECK_PRESETS = {
         step: 1,
         unit: '%',
         action: 'set_volume',
+        muteAction: 'toggle_mute',
         dense: true,
       },
       {
@@ -38,22 +48,6 @@ export const DECK_PRESETS = {
         unit: 'x',
         discrete: true,
         action: 'set_speed',
-        dense: true,
-      },
-      {
-        // Was a tall vertical fader until 0.1.9. The vertical fader widget
-        // still exists (Meeting/Reader use it), but on the Media deck it
-        // cost ~300px and forced scrolling; a horizontal knob keeps the
-        // whole deck on one screen.
-        id: 'media_fader',
-        type: 'knob',
-        label: 'Playback Fader',
-        min: 0,
-        max: 100,
-        defaultValue: 80,
-        step: 1,
-        unit: '%',
-        action: 'set_fader',
         dense: true,
       },
       {
@@ -74,7 +68,6 @@ export const DECK_PRESETS = {
         label: 'Transport Pad Grid',
         defaultValue: {},
         action: 'pad_action',
-        compact: true,
         dense: true,
         pads: [
           { id: 'play_pause', label: 'Play/Pause', icon: '⏯', wide: true },
@@ -88,7 +81,6 @@ export const DECK_PRESETS = {
         label: 'Video Navigation',
         defaultValue: {},
         action: 'pad_action',
-        compact: true,
         dense: true,
         pads: [
           { id: 'prev_video', label: 'Prev Video', icon: '⏮' },
@@ -101,20 +93,11 @@ export const DECK_PRESETS = {
         label: 'Screen',
         defaultValue: {},
         action: 'pad_action',
-        compact: true,
         dense: true,
         pads: [
           { id: 'pip', label: 'PiP', icon: '🖼️' },
           { id: 'fullscreen', label: 'Fullscreen', icon: '⛶' },
         ],
-      },
-      {
-        id: 'media_mute',
-        type: 'switch',
-        label: 'Soft Mute',
-        defaultValue: false,
-        action: 'toggle_mute',
-        dense: true,
       },
     ],
   },

@@ -339,7 +339,15 @@
         else if (padId === 'next_video') nextTrack();
         else if (padId === 'pip') togglePip();
         else if (padId === 'fullscreen') {
-          if (!document.fullscreenElement) {
+          // Go through the player's own fullscreen button: a scripted
+          // requestFullscreen() triggered from the side panel lacks the
+          // user activation the page needs, and in practice only works
+          // after the video itself was clicked. The button path works
+          // without that warm-up click.
+          const fsBtn = document.querySelector('.ytp-fullscreen-button');
+          if (fsBtn) {
+            fsBtn.click();
+          } else if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen().catch(() => {});
           } else {
             document.exitFullscreen().catch(() => {});
