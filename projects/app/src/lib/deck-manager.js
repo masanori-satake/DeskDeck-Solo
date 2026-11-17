@@ -120,10 +120,13 @@ export const DECK_PRESETS = {
         step: 1,
         unit: '%',
         action: 'set_mic_level',
+        dense: true,
       },
       {
+        // Was a vertical fader until 0.3.0; like Media's Playback
+        // Fader it became a horizontal knob so the deck fits better.
         id: 'broadcast_fader',
-        type: 'fader',
+        type: 'knob',
         label: 'Stream Level',
         min: 0,
         max: 100,
@@ -131,6 +134,7 @@ export const DECK_PRESETS = {
         step: 1,
         unit: '%',
         action: 'set_stream_level',
+        dense: true,
       },
       {
         id: 'emergency_cut',
@@ -138,6 +142,7 @@ export const DECK_PRESETS = {
         label: 'Emergency Guard',
         defaultValue: false,
         action: 'toggle_emergency_cut',
+        dense: true,
       },
       {
         id: 'mic_mute',
@@ -145,6 +150,7 @@ export const DECK_PRESETS = {
         label: 'Mic Mute',
         defaultValue: false,
         action: 'toggle_mic_mute',
+        dense: true,
       },
       {
         id: 'camera_toggle',
@@ -152,6 +158,7 @@ export const DECK_PRESETS = {
         label: 'Camera On',
         defaultValue: true,
         action: 'toggle_camera',
+        dense: true,
       },
       {
         id: 'meeting_pad',
@@ -165,6 +172,8 @@ export const DECK_PRESETS = {
           { id: 'thumbsup', label: 'Like', icon: '👍' },
           { id: 'heart', label: 'Love', icon: '❤️' },
         ],
+        compact: true,
+        dense: true,
       },
       {
         id: 'leave_call',
@@ -173,6 +182,7 @@ export const DECK_PRESETS = {
         icon: '📞',
         variant: 'danger',
         action: 'leave_call',
+        dense: true,
       },
     ],
   },
@@ -192,10 +202,13 @@ export const DECK_PRESETS = {
         step: 5,
         unit: '%',
         action: 'set_zoom',
+        dense: true,
       },
       {
+        // Was a vertical fader until 0.3.0; horizontal knob now, same
+        // reasoning as Media (fit without scrolling).
         id: 'brightness_fader',
-        type: 'fader',
+        type: 'knob',
         label: 'Brightness',
         min: 20,
         max: 100,
@@ -203,6 +216,7 @@ export const DECK_PRESETS = {
         step: 1,
         unit: '%',
         action: 'set_brightness',
+        dense: true,
       },
       {
         id: 'contrast_guard',
@@ -210,6 +224,7 @@ export const DECK_PRESETS = {
         label: 'High Contrast',
         defaultValue: false,
         action: 'toggle_contrast_lock',
+        dense: true,
       },
       {
         id: 'dark_mode',
@@ -217,6 +232,7 @@ export const DECK_PRESETS = {
         label: 'Dark Theme',
         defaultValue: true,
         action: 'toggle_dark_reader',
+        dense: true,
       },
       {
         id: 'reader_pad',
@@ -230,6 +246,8 @@ export const DECK_PRESETS = {
           { id: 'pgdn', label: 'PgDn', icon: '▼' },
           { id: 'bot', label: 'Bot', icon: '⏬' },
         ],
+        compact: true,
+        dense: true,
       },
       {
         id: 'reader_toggle',
@@ -238,6 +256,7 @@ export const DECK_PRESETS = {
         icon: '📖',
         variant: 'primary',
         action: 'toggle_reader_mode',
+        dense: true,
       },
     ],
   },
@@ -257,6 +276,7 @@ export const DECK_PRESETS = {
         step: 1,
         unit: '%',
         action: 'set_master_gain',
+        dense: true,
       },
       {
         id: 'main_fader',
@@ -275,6 +295,7 @@ export const DECK_PRESETS = {
         label: '16-Pad Soundboard FX',
         defaultValue: {},
         action: 'soundboard_trigger',
+        dense: true,
       },
       {
         id: 'master_mute',
@@ -282,6 +303,7 @@ export const DECK_PRESETS = {
         label: 'Mute All',
         defaultValue: false,
         action: 'toggle_master_mute',
+        dense: true,
       },
       {
         id: 'reset_eq',
@@ -290,6 +312,7 @@ export const DECK_PRESETS = {
         icon: '↺',
         variant: 'secondary',
         action: 'reset_audio_eq',
+        dense: true,
       },
     ],
   },
@@ -309,17 +332,23 @@ export const DECK_PRESETS = {
         step: 2,
         unit: '',
         action: 'scroll_dial',
+        dense: true,
       },
       {
+        // Was a vertical fader until 0.3.0. Its scale showed generic
+        // 0-100 ticks while the real range is 1-10x; as a discrete knob
+        // the ticks are the actual values (1x..10x).
         id: 'speed_fader',
-        type: 'fader',
+        type: 'knob',
         label: 'Scroll Speed',
         min: 1,
         max: 10,
         defaultValue: 5,
         step: 1,
         unit: 'x',
+        discrete: true,
         action: 'set_scroll_speed',
+        dense: true,
       },
       {
         id: 'tab_pad',
@@ -333,6 +362,8 @@ export const DECK_PRESETS = {
           { id: 'prev', label: 'Prev', icon: '◀' },
           { id: 'next', label: 'Next', icon: '▶' },
         ],
+        compact: true,
+        dense: true,
       },
       {
         id: 'keep_awake',
@@ -340,6 +371,7 @@ export const DECK_PRESETS = {
         label: 'Keep Awake',
         defaultValue: false,
         action: 'toggle_keep_awake',
+        dense: true,
       },
       {
         id: 'mute_bg_tabs',
@@ -348,6 +380,7 @@ export const DECK_PRESETS = {
         icon: '🔇',
         variant: 'secondary',
         action: 'mute_background_tabs',
+        dense: true,
       },
       {
         id: 'bookmark_page',
@@ -356,6 +389,7 @@ export const DECK_PRESETS = {
         icon: '⭐',
         variant: 'secondary',
         action: 'bookmark_page',
+        dense: true,
       },
     ],
   },
