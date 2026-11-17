@@ -17,10 +17,7 @@ export const DECK_PRESETS = {
     // Two titled pages: the sub page carries levels and screen, the
     // main page is transport only.
     pages: [
-      {
-        title: '音量・速度・画面',
-        slots: ['media_volume', 'media_speed', 'jog_seek', 'media_screen_pad'],
-      },
+      { title: '音量と速度', slots: ['media_volume', 'media_speed', 'jog_seek'] },
       { title: '再生', slots: ['media_pad', 'media_video_nav'] },
     ],
     initialPage: 1,
@@ -91,19 +88,6 @@ export const DECK_PRESETS = {
           { id: 'next_video', label: 'Next Video', iconSvg: 'next' },
         ],
       },
-      {
-        id: 'media_screen_pad',
-        type: 'pad2x2',
-        label: 'Screen',
-        defaultValue: {},
-        action: 'pad_action',
-        compact: true,
-        dense: true,
-        pads: [
-          { id: 'pip', label: 'PiP', iconSvg: 'pip' },
-          { id: 'fullscreen', label: 'Fullscreen', iconSvg: 'fullscreen' },
-        ],
-      },
     ],
   },
   meeting: {
@@ -113,8 +97,7 @@ export const DECK_PRESETS = {
     accentColor: '#10b981',
     pages: [
       { title: '音量', slots: ['mic_volume', 'broadcast_fader'] },
-      { title: '会議', slots: ['mic_mute', 'camera_toggle', 'meeting_pad'] },
-      { title: '安全', slots: ['emergency_cut', 'leave_call'] },
+      { title: '会議', slots: ['camera_guard', 'mic_mute', 'meeting_pad', 'leave_call'] },
     ],
     initialPage: 1,
     slots: [
@@ -145,27 +128,25 @@ export const DECK_PRESETS = {
         dense: true,
       },
       {
-        id: 'emergency_cut',
+        // Was "Emergency Guard" (a guarded emergency leave on
+        // Teams/Meet) until 0.3.5. Its purpose was never discoverable
+        // from the panel, so the guarded flip switch now guards the
+        // camera instead: flipping it toggles the camera, and the
+        // cover/flip interaction keeps it from turning on by mistake.
+        id: 'camera_guard',
         type: 'flip_switch',
-        label: 'Emergency Guard',
+        label: 'Camera Guard',
         defaultValue: false,
-        action: 'toggle_emergency_cut',
+        action: 'toggle_camera',
         dense: true,
       },
       {
         id: 'mic_mute',
-        type: 'switch',
+        type: 'button',
         label: 'Mic Mute',
-        defaultValue: false,
+        iconSvg: 'mic',
+        variant: 'secondary',
         action: 'toggle_mic_mute',
-        dense: true,
-      },
-      {
-        id: 'camera_toggle',
-        type: 'switch',
-        label: 'Camera On',
-        defaultValue: true,
-        action: 'toggle_camera',
         dense: true,
       },
       {
@@ -384,10 +365,10 @@ export const DECK_PRESETS = {
         defaultValue: {},
         action: 'pad_tab',
         pads: [
-          { id: 'new', label: 'New', icon: '➕' },
-          { id: 'close', label: 'Close', icon: '✖' },
-          { id: 'prev', label: 'Prev', icon: '◀' },
-          { id: 'next', label: 'Next', icon: '▶' },
+          { id: 'new', label: 'New', iconSvg: 'plus' },
+          { id: 'close', label: 'Close', iconSvg: 'close' },
+          { id: 'prev', label: 'Prev', iconSvg: 'triLeft' },
+          { id: 'next', label: 'Next', iconSvg: 'triRight' },
         ],
         compact: true,
         dense: true,

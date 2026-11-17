@@ -135,6 +135,30 @@ async function handleDeckAction(message) {
       }
       break;
 
+    // Standard Tab Management Grid: the pads send one 'pad_tab' action
+    // with a padId. This case was missing, so the message fell through
+    // to the content script (which cannot manage tabs) and every pad —
+    // New, Close, Prev, Next — silently did nothing.
+    case 'pad_tab': {
+      const padId = payload && payload.padId;
+      if (padId === 'new') {
+        await chrome.tabs.create({});
+        return { created: true };
+      }
+      if (padId === 'close') {
+        if (activeTab && activeTab.id) {
+          await chrome.tabs.remove(activeTab.id);
+          return { closed: true };
+        }
+        break;
+      }
+      if (padId === 'prev' || padId === 'next') {
+        await cycleTab(padId === 'next' ? 1 : -1);
+        return { cycled: true };
+      }
+      break;
+    }
+
     // Standard Tab Navigation actions
     case 'new_tab':
       await chrome.tabs.create({});

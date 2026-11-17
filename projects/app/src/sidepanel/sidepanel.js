@@ -1038,6 +1038,12 @@ const PAD_ICON_PATHS = {
     '<path d="M4 9.6v4.8h3.4L12 18.5V5.5L7.4 9.6H4Z"/><path d="M15.4 9.4a3.8 3.8 0 0 1 0 5.2M18 7a7.6 7.6 0 0 1 0 10" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>',
   volumeOff:
     '<path d="M4 9.6v4.8h3.4L12 18.5V5.5L7.4 9.6H4Z"/><path d="m16 9.8 5.2 5.2M21.2 9.8 16 15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>',
+  plus: '<path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/>',
+  close:
+    '<path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4L12 13.4 6.4 19 5 17.6 10.6 12 5 6.4z"/>',
+  triLeft: '<path d="M16 5v14L7 12z"/>',
+  triRight: '<path d="M8 5v14l9-7z"/>',
+  mic: '<path d="M12 14.5a2.75 2.75 0 0 0 2.75-2.75v-5.5a2.75 2.75 0 1 0-5.5 0v5.5A2.75 2.75 0 0 0 12 14.5Z"/><path d="M17.5 11.25a5.5 5.5 0 0 1-11 0M12 16.75V20M9 20h6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>',
 };
 
 function createPadIcon(name) {
@@ -1176,7 +1182,12 @@ function renderButtonWidget(cardContainer, slot, _deckId) {
 
   const iconSpan = document.createElement('span');
   iconSpan.className = 'btn-icon';
-  iconSpan.textContent = slot.icon || '🔘';
+  const btnSvgIcon = slot.iconSvg ? createPadIcon(slot.iconSvg) : null;
+  if (btnSvgIcon) {
+    iconSpan.appendChild(btnSvgIcon);
+  } else {
+    iconSpan.textContent = slot.icon || '🔘';
+  }
 
   const textSpan = document.createElement('span');
   textSpan.className = 'btn-text';
