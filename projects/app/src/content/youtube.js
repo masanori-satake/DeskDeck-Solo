@@ -252,10 +252,14 @@
     }
   }
 
+  let pipRequestSeq = 0;
+  let pendingPipCheck = null;
+
   /**
    * Toggle Picture-in-Picture mode
    */
   async function togglePip() {
+    const requestSeq = ++pipRequestSeq;
     const video = getYouTubeVideo();
 
     if (document.pictureInPictureElement) {
@@ -274,6 +278,14 @@
     // even though the fallback then worked. The API stays as the
     // fallback for layouts without the button, and its (expected)
     // rejection is only debug-logged.
+    // Only the latest request verifies: a new attempt retires the
+    // previous attempt's listener and timer, so an earlier failure
+    // can neither report nor claim a later attempt's success.
+    if (pendingPipCheck) {
+      clearTimeout(pendingPipCheck.timer);
+      pendingPipCheck.video.removeEventListener('enterpictureinpicture', pendingPipCheck.onEnter);
+      pendingPipCheck = null;
+    }
     // The listener goes on before the attempt: on the API path the
     // event can fire before the awaited request resolves, and a named
     // listener can be removed when the check window closes (a
@@ -299,12 +311,20 @@
     // Verify instead of guessing: if PiP did not engage, say so on the
     // video itself rather than failing silently. Opening and closing
     // again within the window still counts as success.
-    setTimeout(() => {
+    if (requestSeq !== pipRequestSeq) {
+      // Superseded while awaiting the request: the newer attempt owns
+      // verification now.
+      if (video) video.removeEventListener('enterpictureinpicture', onEnter);
+      return;
+    }
+    const timer = setTimeout(() => {
+      pendingPipCheck = null;
       if (video) video.removeEventListener('enterpictureinpicture', onEnter);
       if (!entered && !document.pictureInPictureElement) {
         showInfoToast(video, 'PiPにできませんでした。動画タッチ直後に押してください');
       }
     }, 900);
+    pendingPipCheck = { timer, video, onEnter };
   }
 
   /**

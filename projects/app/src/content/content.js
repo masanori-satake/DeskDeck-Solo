@@ -543,6 +543,9 @@ async function togglePictureInPicture() {
     entered = true;
   };
   video.addEventListener('enterpictureinpicture', onEnter);
+  // Judged later, but read now: by notification time the metadata
+  // may have finished loading, changing what the rejection meant.
+  const readyStateAtRequest = video.readyState;
   let requestErrorName = null;
   try {
     await video.requestPictureInPicture();
@@ -556,7 +559,7 @@ async function togglePictureInPicture() {
   setTimeout(() => {
     video.removeEventListener('enterpictureinpicture', onEnter);
     if (entered || document.pictureInPictureElement) return;
-    if (requestErrorName === 'InvalidStateError' && video.readyState === 0) {
+    if (requestErrorName === 'InvalidStateError' && readyStateAtRequest === 0) {
       showInfoToast(video, '動画の読み込みが終わってから押してください');
     } else {
       showInfoToast(video, 'PiPにできませんでした。動画タッチ直後に押してください');

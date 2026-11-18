@@ -50,7 +50,14 @@ async function handleDeckAction(message, sender) {
   // Pin the window at input time: in a service worker, currentWindow
   // resolves to the last focused window, which may have changed by
   // the time a queued operation actually runs.
-  const senderWindowId = sender && sender.tab ? sender.tab.windowId : undefined;
+  // A tab sender pins its window directly; a side-panel sender has
+  // no tab, so the panel includes its own window id in the message.
+  const senderWindowId =
+    sender && sender.tab
+      ? sender.tab.windowId
+      : typeof message.windowId === 'number'
+        ? message.windowId
+        : undefined;
   const activeQuery =
     senderWindowId !== undefined
       ? { active: true, windowId: senderWindowId }
@@ -151,12 +158,12 @@ async function handleDeckAction(message, sender) {
     case 'pad_tab': {
       const padId = payload && payload.padId;
       if (padId === 'new') {
-        await chrome.tabs.create({});
+        await queueTabOperation(() => chrome.tabs.create({}));
         return { created: true };
       }
       if (padId === 'close') {
-        await queueTabOperation(() => closeActiveTab(senderWindowId));
-        return { closed: true };
+        const closed = await queueTabOperation(() => closeActiveTab(senderWindowId));
+        return { closed };
       }
       if (padId === 'prev' || padId === 'next') {
         await queueCycleTab(padId === 'next' ? 1 : -1, senderWindowId);
@@ -167,12 +174,13 @@ async function handleDeckAction(message, sender) {
 
     // Standard Tab Navigation actions
     case 'new_tab':
-      await chrome.tabs.create({});
+      await queueTabOperation(() => chrome.tabs.create({}));
       return { created: true };
 
-    case 'close_tab':
-      await queueTabOperation(() => closeActiveTab(senderWindowId));
-      return { closed: true };
+    case 'close_tab': {
+      const closed = await queueTabOperation(() => closeActiveTab(senderWindowId));
+      return { closed };
+    }
 
     case 'prev_tab':
     case 'next_tab':
@@ -240,7 +248,16 @@ async function sendToTab(tabId, msg) {
 // both resolve the active tab when they run, not when they arrive.
 let tabOpChain = Promise.resolve();
 function queueTabOperation(operation) {
-  const run = tabOpChain.then(operation);
+  // A single operation must never wedge the chain: tabs.remove() can
+  // stay unsettled when a tab lingers (e.g. a leave confirmation), so
+  // the chain races each operation against a timeout and moves on.
+  // The operation itself is left to finish in the background.
+  const op = Promise.resolve().then(operation);
+  op.catch(() => {});
+  const run = Promise.race([
+    op,
+    new Promise((resolve) => setTimeout(() => resolve(undefined), 3000)),
+  ]);
   tabOpChain = run.catch(() => {});
   return run;
 }
@@ -251,7 +268,11 @@ async function closeActiveTab(windowId) {
   const [tab] = await chrome.tabs.query(
     windowId !== undefined ? { active: true, windowId } : { active: true, currentWindow: true }
   );
-  if (tab && tab.id) await chrome.tabs.remove(tab.id);
+  if (tab && tab.id) {
+    await chrome.tabs.remove(tab.id);
+    return true;
+  }
+  return false;
 }
 
 /**

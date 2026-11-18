@@ -148,6 +148,16 @@ function toggleClass(el, name, force) {
   }
 }
 
+function persistSlotStates(deckId) {
+  const states = { ...currentSlotStates };
+  if (currentDeckPreset) {
+    currentDeckPreset.slots.forEach((slot) => {
+      if (slot.endless) delete states[slot.id];
+    });
+  }
+  saveDeckSlotStates(deckId, states);
+}
+
 function buildSlotCard(slot, deckId) {
   const card = document.createElement('div');
   card.className = `slot-card slot-${slot.type}`;
@@ -320,6 +330,22 @@ function renderDeckSlots(deckId) {
     },
     { passive: true, signal: pagerAbortController.signal }
   );
+  container.addEventListener(
+    'touchcancel',
+    (e) => {
+      // A cancelled tracked finger ends the gesture without moving
+      // the page; any other finger's cancel leaves tracking alone.
+      for (const t of e.changedTouches) {
+        if (t.identifier === touchStartId) {
+          touchStartY = null;
+          touchStartX = null;
+          touchStartId = null;
+          touchStartOnCover = false;
+        }
+      }
+    },
+    { passive: true, signal: pagerAbortController.signal }
+  );
   let lastWheelNav = 0;
   container.addEventListener(
     'wheel',
@@ -432,7 +458,7 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
     muteBtn.addEventListener('click', () => {
       muted = !muted;
       currentSlotStates[`${slot.id}_mute`] = muted;
-      saveDeckSlotStates(deckId, currentSlotStates);
+      persistSlotStates(deckId);
       updateMuteUI();
       dispatchDeckAction(slot.muteAction, { enabled: muted });
       if (appSettings.hapticFeedback) triggerHaptic(10);
@@ -480,7 +506,7 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
     val = newVal;
     currentSlotStates[slot.id] = val;
     updateWheelUI(val);
-    if (!slot.endless) saveDeckSlotStates(deckId, currentSlotStates);
+    if (!slot.endless) persistSlotStates(deckId);
     const payload = { value: val };
     if (slot.endless) {
       payload.delta = newVal - dispatchBase;
@@ -682,7 +708,7 @@ function renderDiscreteKnobWidget(cardContainer, slot, deckId) {
     currentSlotStates[slot.id] = currentVal;
 
     updateDiscreteUI(currentIndex);
-    saveDeckSlotStates(deckId, currentSlotStates);
+    persistSlotStates(deckId);
     dispatchDeckAction(slot.action, { value: currentVal });
 
     if (appSettings.soundEffects) playSwitchSound(true);
@@ -863,7 +889,7 @@ function renderFaderWidget(cardContainer, slot, deckId) {
     val = newVal;
     currentSlotStates[slot.id] = val;
     updateFaderUI(val);
-    saveDeckSlotStates(deckId, currentSlotStates);
+    persistSlotStates(deckId);
     dispatchDeckAction(slot.action, { value: val });
 
     const bucket = Math.floor(val / faderTickStep);
@@ -1021,9 +1047,12 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
   };
 
   let housingCaptured = false;
+  let coverPointerId = null;
 
   const onHousingPointerDown = (e) => {
+    if (isCoverDragging) return;
     isCoverDragging = true;
+    coverPointerId = e.pointerId;
     didCoverDrag = false;
     suppressBaseClick = false;
     dragStartX = e.clientX;
@@ -1033,11 +1062,12 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
   };
 
   const onHousingPointerMove = (e) => {
-    if (!isCoverDragging) return;
+    if (!isCoverDragging || e.pointerId !== coverPointerId) return;
     if (e.buttons === 0) {
       // The press ended outside the housing before capture started;
       // drop the stale drag instead of acting on a later hover.
       isCoverDragging = false;
+      coverPointerId = null;
       didCoverDrag = false;
       return;
     }
@@ -1063,8 +1093,9 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
   };
 
   const onHousingPointerUp = (e) => {
-    if (isCoverDragging) {
+    if (isCoverDragging && e.pointerId === coverPointerId) {
       isCoverDragging = false;
+      coverPointerId = null;
       if (didCoverDrag) suppressBaseClick = true;
       if (housingCaptured) {
         housingCaptured = false;
@@ -1130,7 +1161,7 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
     }
     base.setAttribute('aria-checked', String(newState));
 
-    saveDeckSlotStates(deckId, currentSlotStates);
+    persistSlotStates(deckId);
     dispatchDeckAction(slot.action, {
       enabled: newState,
       protectedCover: true,
@@ -1309,7 +1340,7 @@ function renderSwitchWidget(cardContainer, slot, deckId) {
       statusLabel.textContent = 'OFF';
     }
 
-    saveDeckSlotStates(deckId, currentSlotStates);
+    persistSlotStates(deckId);
     dispatchDeckAction(slot.action, { enabled: newState });
 
     if (appSettings.soundEffects) playSwitchSound(newState);
@@ -1349,9 +1380,21 @@ function renderButtonWidget(cardContainer, slot, _deckId) {
   });
 }
 
+let panelWindowId = null;
+if (typeof chrome !== 'undefined' && chrome.windows && chrome.windows.getCurrent) {
+  chrome.windows
+    .getCurrent()
+    .then((w) => {
+      panelWindowId = w && typeof w.id === 'number' ? w.id : null;
+    })
+    .catch(() => {});
+}
+
 function dispatchDeckAction(action, payload) {
   if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-    chrome.runtime.sendMessage({ action, payload }, (_response) => {
+    const message = { action, payload };
+    if (panelWindowId !== null) message.windowId = panelWindowId;
+    chrome.runtime.sendMessage(message, (_response) => {
       if (chrome.runtime.lastError) {
         // Quietly absorb errors if background worker is sleeping
       }
