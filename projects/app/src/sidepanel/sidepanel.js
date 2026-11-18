@@ -1112,6 +1112,17 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
   housing.addEventListener('pointermove', onHousingPointerMove);
   housing.addEventListener('pointerup', onHousingPointerUp);
   housing.addEventListener('pointercancel', onHousingPointerUp);
+  housing.addEventListener('pointerleave', (e) => {
+    // The press ended outside the housing before capture started, so
+    // no pointerup ever arrives: end the stale drag here, or the next
+    // touch swipe on the cover is refused. Only the tracked pointer,
+    // before capture, may end the drag this way.
+    if (!housingCaptured && isCoverDragging && e.pointerId === coverPointerId) {
+      isCoverDragging = false;
+      coverPointerId = null;
+      didCoverDrag = false;
+    }
+  });
 
   // Tap toggles the cover. The handler sits on the housing (pointer
   // capture retargets clicks there after any drag), and clicks that
@@ -1381,24 +1392,43 @@ function renderButtonWidget(cardContainer, slot, _deckId) {
 }
 
 let panelWindowId = null;
+// Settles when the window lookup finishes; null once it has, so the
+// common path stays a plain synchronous send.
+let panelWindowIdLookup = null;
 if (typeof chrome !== 'undefined' && chrome.windows && chrome.windows.getCurrent) {
-  chrome.windows
+  panelWindowIdLookup = chrome.windows
     .getCurrent()
     .then((w) => {
       panelWindowId = w && typeof w.id === 'number' ? w.id : null;
     })
-    .catch(() => {});
+    .catch(() => {
+      panelWindowId = null;
+    });
+  panelWindowIdLookup.then(() => {
+    panelWindowIdLookup = null;
+  });
 }
 
 function dispatchDeckAction(action, payload) {
   if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-    const message = { action, payload };
-    if (panelWindowId !== null) message.windowId = panelWindowId;
-    chrome.runtime.sendMessage(message, (_response) => {
-      if (chrome.runtime.lastError) {
-        // Quietly absorb errors if background worker is sleeping
-      }
-    });
+    const send = () => {
+      const message = { action, payload };
+      if (panelWindowId !== null) message.windowId = panelWindowId;
+      chrome.runtime.sendMessage(message, (_response) => {
+        if (chrome.runtime.lastError) {
+          // Quietly absorb errors if background worker is sleeping
+        }
+      });
+    };
+    // Hold the message until the window lookup settles: a Close sent
+    // without a window id makes the worker close the last focused
+    // window's tab instead of this panel's. A failed lookup clears
+    // the hold at once and the message goes out as before.
+    if (panelWindowIdLookup) {
+      panelWindowIdLookup.then(send);
+    } else {
+      send();
+    }
   } else {
     console.log('[DeskDeck Sim Action]', action, payload);
   }

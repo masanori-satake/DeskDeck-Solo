@@ -81,12 +81,17 @@ async function handleDeckAction(message, sender) {
 
     case 'set_brightness': {
       const val = payload ? (payload.value ?? payload.brightness ?? 100) : 100;
+      // The source window may have closed between the message and
+      // the tab query: with a pinned window id and no tab in it, do
+      // not fall through to another window's tab.
+      if (!activeTab && senderWindowId !== undefined) return { handled: false };
       return await setTabBrightness(activeTab ? activeTab.id : null, val, true);
     }
 
     case 'set_dimmer_opacity':
     case 'set_dimmer': {
       const opacityVal = payload ? (payload.opacity ?? payload.value ?? 0) : 0;
+      if (!activeTab && senderWindowId !== undefined) return { handled: false };
       return await setTabBrightness(activeTab ? activeTab.id : null, opacityVal, false);
     }
 
@@ -158,12 +163,14 @@ async function handleDeckAction(message, sender) {
     case 'pad_tab': {
       const padId = payload && payload.padId;
       if (padId === 'new') {
-        await queueTabOperation(() => chrome.tabs.create({}));
+        await queueTabOperation(() =>
+          chrome.tabs.create(senderWindowId !== undefined ? { windowId: senderWindowId } : {})
+        );
         return { created: true };
       }
       if (padId === 'close') {
-        const closed = await queueTabOperation(() => closeActiveTab(senderWindowId));
-        return { closed };
+        const outcome = await queueTabOperation(() => closeActiveTab(senderWindowId));
+        return outcome === TAB_OP_TIMEOUT ? { timedOut: true } : { closed: outcome };
       }
       if (padId === 'prev' || padId === 'next') {
         await queueCycleTab(padId === 'next' ? 1 : -1, senderWindowId);
@@ -174,12 +181,14 @@ async function handleDeckAction(message, sender) {
 
     // Standard Tab Navigation actions
     case 'new_tab':
-      await queueTabOperation(() => chrome.tabs.create({}));
+      await queueTabOperation(() =>
+        chrome.tabs.create(senderWindowId !== undefined ? { windowId: senderWindowId } : {})
+      );
       return { created: true };
 
     case 'close_tab': {
-      const closed = await queueTabOperation(() => closeActiveTab(senderWindowId));
-      return { closed };
+      const outcome = await queueTabOperation(() => closeActiveTab(senderWindowId));
+      return outcome === TAB_OP_TIMEOUT ? { timedOut: true } : { closed: outcome };
     }
 
     case 'prev_tab':
@@ -247,6 +256,10 @@ async function sendToTab(tabId, msg) {
 // Close that follows a Next must close the tab the Next landed on —
 // both resolve the active tab when they run, not when they arrive.
 let tabOpChain = Promise.resolve();
+// Resolves from queueTabOperation when the 3s guard fires instead of
+// the operation: the caller must tell a timeout apart from a real
+// result, since a timed-out Close is neither "closed" nor "no tab".
+const TAB_OP_TIMEOUT = Symbol('tab-op-timeout');
 function queueTabOperation(operation) {
   // A single operation must never wedge the chain: tabs.remove() can
   // stay unsettled when a tab lingers (e.g. a leave confirmation), so
@@ -256,7 +269,7 @@ function queueTabOperation(operation) {
   op.catch(() => {});
   const run = Promise.race([
     op,
-    new Promise((resolve) => setTimeout(() => resolve(undefined), 3000)),
+    new Promise((resolve) => setTimeout(() => resolve(TAB_OP_TIMEOUT), 3000)),
   ]);
   tabOpChain = run.catch(() => {});
   return run;

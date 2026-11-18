@@ -283,7 +283,11 @@
     // can neither report nor claim a later attempt's success.
     if (pendingPipCheck) {
       clearTimeout(pendingPipCheck.timer);
-      pendingPipCheck.video.removeEventListener('enterpictureinpicture', pendingPipCheck.onEnter);
+      // A no-video attempt stores a null video: guard the removal,
+      // but always retire the stale check so the next attempt works.
+      if (pendingPipCheck.video) {
+        pendingPipCheck.video.removeEventListener('enterpictureinpicture', pendingPipCheck.onEnter);
+      }
       pendingPipCheck = null;
     }
     // The listener goes on before the attempt: on the API path the
@@ -437,8 +441,13 @@
 
       case 'seek_dial':
       case 'scroll_dial': {
-        const value = payload.value ?? 50;
-        const deltaSeconds = (value - 50) * 0.2; // Dial rotation mapped to relative seek
+        // The endless Scroll Wheel sends its relative movement: a
+        // clamped absolute value would stall the seek at the end
+        // stops, the same reason the page-scroll side takes a delta.
+        const deltaSeconds =
+          typeof payload.delta === 'number'
+            ? payload.delta * 0.2
+            : ((payload.value ?? 50) - 50) * 0.2; // Dial rotation mapped to relative seek
         if (deltaSeconds !== 0) {
           seek(deltaSeconds, true);
         }
