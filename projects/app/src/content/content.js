@@ -134,9 +134,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const padId = payload ? payload.padId : null;
       if (padId === 'play') playMedia();
       else if (padId === 'pause') pauseMedia();
-      else if (padId === 'prev') skipMediaTrack(-10);
-      else if (padId === 'next') skipMediaTrack(10);
-      else toggleMediaPlayback();
+      else if (padId === 'play_pause') toggleMediaPlayback();
+      // 'prev'/'next' are the pre-0.1.6 pad ids and meant ±10s on generic
+      // pages; keep them as aliases of the renamed back10/fwd10 pads.
+      else if (padId === 'back10' || padId === 'prev') skipMediaTrack(-10);
+      else if (padId === 'fwd10' || padId === 'next') skipMediaTrack(10);
+      else if (padId === 'pip') togglePictureInPicture();
+      else if (padId === 'fullscreen') {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+      // 'prev_video'/'next_video' intentionally do nothing on generic
+      // pages: there is no playlist to move through. Site-specific
+      // handlers (YouTube) intercept pad_action before this point.
+      else if (padId === 'prev_video' || padId === 'next_video') {
+        /* no-op on generic pages */
+      } else toggleMediaPlayback();
       sendResponse({ handled: true });
       break;
     }
@@ -314,9 +330,58 @@ function skipMediaTrack(seconds) {
   seekVideo(seconds, true);
 }
 
+let seekToastEl = null;
+let seekToastTimer = null;
+
+function formatClock(totalSeconds) {
+  const s = Math.max(0, Math.floor(totalSeconds || 0));
+  const hours = Math.floor(s / 3600);
+  const minutes = Math.floor((s % 3600) / 60);
+  const secs = s % 60;
+  const mm = hours > 0 ? String(minutes).padStart(2, '0') : String(minutes);
+  return `${hours > 0 ? `${hours}:` : ''}${mm}:${String(secs).padStart(2, '0')}`;
+}
+
+/**
+ * Brief on-video feedback after a seek: how far it moved and where it
+ * landed ("+24s → 12:34 / 45:00"). The side panel cannot be seen while
+ * watching, so the feedback lives on the video itself for ~1.2s.
+ */
+function showSeekFeedback(video, deltaSeconds, landedTime, totalDuration) {
+  if (!video) return;
+  const rect = video.getBoundingClientRect();
+  if (!rect || rect.width === 0 || rect.height === 0) return;
+
+  if (!seekToastEl) {
+    seekToastEl = document.createElement('div');
+    seekToastEl.style.cssText =
+      'position:fixed;z-index:2147483647;pointer-events:none;' +
+      'background:rgba(0,0,0,0.78);color:#fff;' +
+      'font:600 14px/1.4 system-ui,sans-serif;padding:8px 16px;' +
+      'border-radius:999px;transform:translateX(-50%);' +
+      'opacity:0;transition:opacity 0.18s ease;white-space:nowrap;';
+    document.documentElement.appendChild(seekToastEl);
+  }
+
+  const delta = Math.round(deltaSeconds);
+  const sign = delta >= 0 ? '+' : '-';
+  seekToastEl.textContent =
+    `${sign}${Math.abs(delta)}s → ` +
+    `${formatClock(video.currentTime)} / ${formatClock(video.duration)}`;
+  seekToastEl.style.left = `${rect.left + rect.width / 2}px`;
+  seekToastEl.style.top = `${rect.top + Math.max(12, rect.height * 0.12)}px`;
+  seekToastEl.style.opacity = '1';
+
+  if (seekToastTimer) clearTimeout(seekToastTimer);
+  seekToastTimer = setTimeout(() => {
+    if (seekToastEl) seekToastEl.style.opacity = '0';
+  }, 1200);
+}
+
 function seekVideo(seconds, isRelative = true) {
   const video = getPrimaryVideoElement();
   if (video) {
+    const beforeTime = video.currentTime;
     let targetTime = isRelative ? video.currentTime + seconds : seconds;
     if (!isNaN(video.duration) && video.duration > 0) {
       targetTime = Math.max(0, Math.min(video.duration, targetTime));
@@ -324,6 +389,7 @@ function seekVideo(seconds, isRelative = true) {
       targetTime = Math.max(0, targetTime);
     }
     video.currentTime = targetTime;
+    showSeekFeedback(video, targetTime - beforeTime, targetTime, video.duration);
   } else {
     const mediaElements = document.querySelectorAll('audio');
     mediaElements.forEach((m) => {
@@ -348,7 +414,7 @@ async function togglePictureInPicture() {
     try {
       await document.exitPictureInPicture();
     } catch (err) {
-      console.warn('Exit PiP failed:', err);
+      console.debug('Exit PiP failed:', err);
     }
     return;
   }
@@ -358,7 +424,9 @@ async function togglePictureInPicture() {
     try {
       await video.requestPictureInPicture();
     } catch (err) {
-      console.warn('Request PiP failed:', err);
+      // Expected when the trigger came from the side panel (the page
+      // has no user activation); not an error worth surfacing.
+      console.debug('Request PiP failed:', err);
     }
   }
 }

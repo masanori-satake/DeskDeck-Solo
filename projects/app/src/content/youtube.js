@@ -120,11 +120,67 @@
       targetTime = Math.max(0, targetTime);
     }
 
+    const beforeTime =
+      player && typeof player.getCurrentTime === 'function'
+        ? player.getCurrentTime()
+        : video
+          ? video.currentTime
+          : targetTime;
+
     if (player && typeof player.seekTo === 'function') {
       player.seekTo(targetTime, true);
     } else if (video) {
       video.currentTime = targetTime;
     }
+
+    showSeekFeedback(video, targetTime - beforeTime, targetTime, duration);
+  }
+
+  let seekToastEl = null;
+  let seekToastTimer = null;
+
+  function formatClock(totalSeconds) {
+    const s = Math.max(0, Math.floor(totalSeconds || 0));
+    const hours = Math.floor(s / 3600);
+    const minutes = Math.floor((s % 3600) / 60);
+    const secs = s % 60;
+    const mm = hours > 0 ? String(minutes).padStart(2, '0') : String(minutes);
+    return `${hours > 0 ? `${hours}:` : ''}${mm}:${String(secs).padStart(2, '0')}`;
+  }
+
+  /**
+   * Brief on-video feedback after a seek ("+24s → 12:34 / 45:00"),
+   * shown for ~1.2s. Jog seeking in particular moves blind without it.
+   */
+  function showSeekFeedback(video, deltaSeconds, landedTime, totalDuration) {
+    if (!video) return;
+    const rect = video.getBoundingClientRect();
+    if (!rect || rect.width === 0 || rect.height === 0) return;
+
+    if (!seekToastEl) {
+      seekToastEl = document.createElement('div');
+      seekToastEl.style.cssText =
+        'position:fixed;z-index:2147483647;pointer-events:none;' +
+        'background:rgba(0,0,0,0.78);color:#fff;' +
+        'font:600 14px/1.4 system-ui,sans-serif;padding:8px 16px;' +
+        'border-radius:999px;transform:translateX(-50%);' +
+        'opacity:0;transition:opacity 0.18s ease;white-space:nowrap;';
+      document.documentElement.appendChild(seekToastEl);
+    }
+
+    const delta = Math.round(deltaSeconds);
+    const sign = delta >= 0 ? '+' : '-';
+    seekToastEl.textContent =
+      `${sign}${Math.abs(delta)}s → ` +
+      `${formatClock(landedTime)} / ${formatClock(totalDuration)}`;
+    seekToastEl.style.left = `${rect.left + rect.width / 2}px`;
+    seekToastEl.style.top = `${rect.top + Math.max(12, rect.height * 0.12)}px`;
+    seekToastEl.style.opacity = '1';
+
+    if (seekToastTimer) clearTimeout(seekToastTimer);
+    seekToastTimer = setTimeout(() => {
+      if (seekToastEl) seekToastEl.style.opacity = '0';
+    }, 1200);
   }
 
   /**
@@ -155,24 +211,30 @@
       try {
         await document.exitPictureInPicture();
       } catch (err) {
-        console.warn('YouTube PiP exit error:', err);
+        console.debug('YouTube PiP exit error:', err);
       }
+      return;
+    }
+
+    // Prefer the player's own PiP button, like fullscreen: the raw
+    // requestPictureInPicture() call is rejected when it is triggered
+    // from the side panel (no user activation in the page), which used
+    // to land in the extension's error list as a scary-looking warning
+    // even though the fallback then worked. The API stays as the
+    // fallback for layouts without the button, and its (expected)
+    // rejection is only debug-logged.
+    const pipBtn = document.querySelector('.ytp-pip-button');
+    if (pipBtn) {
+      pipBtn.click();
       return;
     }
 
     if (video && document.pictureInPictureEnabled) {
       try {
         await video.requestPictureInPicture();
-        return;
       } catch (err) {
-        console.warn('YouTube video.requestPictureInPicture failed, trying fallback:', err);
+        console.debug('YouTube video.requestPictureInPicture failed:', err);
       }
-    }
-
-    // Fallback: Click YouTube PiP button if available
-    const pipBtn = document.querySelector('.ytp-pip-button');
-    if (pipBtn) {
-      pipBtn.click();
     }
   }
 
@@ -212,34 +274,41 @@
   }
 
   /**
-   * Skip to next track/video
+   * Skip to next video
    */
   function nextTrack() {
-    const player = getYouTubePlayer();
+    // Click the player's own Next button whenever it exists. Do not gate
+    // on visibility (offsetParent): in tablet mode the control bar stays
+    // display:none until the screen is touched, which failed the check and
+    // silently fell back to a +10s seek. A "Next Video" button must never
+    // quietly become a seek button, so when no video navigation exists
+    // this deliberately does nothing.
     const nextBtn = document.querySelector('.ytp-next-button');
-
-    if (nextBtn && nextBtn.offsetParent !== null) {
+    if (nextBtn) {
       nextBtn.click();
-    } else if (player && typeof player.nextVideo === 'function') {
+      return;
+    }
+
+    const player = getYouTubePlayer();
+    if (player && typeof player.nextVideo === 'function') {
       player.nextVideo();
-    } else {
-      seek(10, true);
     }
   }
 
   /**
-   * Skip to previous track/video or seek -10s
+   * Skip to previous video
    */
   function prevTrack() {
-    const player = getYouTubePlayer();
+    // Same reasoning as nextTrack: no visibility gate, no seek fallback.
     const prevBtn = document.querySelector('.ytp-prev-button');
-
-    if (prevBtn && prevBtn.offsetParent !== null) {
+    if (prevBtn) {
       prevBtn.click();
-    } else if (player && typeof player.previousVideo === 'function') {
+      return;
+    }
+
+    const player = getYouTubePlayer();
+    if (player && typeof player.previousVideo === 'function') {
       player.previousVideo();
-    } else {
-      seek(-10, true);
     }
   }
 
@@ -323,7 +392,29 @@
         const padId = payload.padId;
         if (padId === 'play') play();
         else if (padId === 'pause') pause();
-        else if (padId === 'prev') prevTrack();
+        else if (padId === 'play_pause') togglePlayPause();
+        // The ±10s pads always seek, even on YouTube; moving between
+        // videos lives on the dedicated video navigation pads.
+        else if (padId === 'back10') seek(-10, true);
+        else if (padId === 'fwd10') seek(10, true);
+        else if (padId === 'prev_video') prevTrack();
+        else if (padId === 'next_video') nextTrack();
+        else if (padId === 'pip') togglePip();
+        else if (padId === 'fullscreen') {
+          // Go through the player's own fullscreen button: a scripted
+          // requestFullscreen() triggered from the side panel lacks the
+          // user activation the page needs, and in practice only works
+          // after the video itself was clicked. The button path works
+          // without that warm-up click.
+          const fsBtn = document.querySelector('.ytp-fullscreen-button');
+          if (fsBtn) {
+            fsBtn.click();
+          } else if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+          } else {
+            document.exitFullscreen().catch(() => {});
+          }
+        } else if (padId === 'prev') prevTrack();
         else if (padId === 'next') nextTrack();
         else togglePlayPause();
         return true;

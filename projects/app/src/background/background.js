@@ -175,6 +175,13 @@ async function handleDeckAction(message) {
   }
 }
 
+const CONTENT_SCRIPT_FILES = [
+  'src/content/teams.js',
+  'src/content/meet.js',
+  'src/content/youtube.js',
+  'src/content/content.js',
+];
+
 /**
  * Helper to send message to tab content script safely
  */
@@ -182,8 +189,21 @@ async function sendToTab(tabId, msg) {
   try {
     return await chrome.tabs.sendMessage(tabId, msg);
   } catch (err) {
-    // Content script might not be injected in chrome:// or special pages
-    return { status: 'no_content_script', message: err.message };
+    // The tab's content script is often orphaned after the extension is
+    // reloaded: the page keeps running but its scripts are disconnected,
+    // so the action used to be dropped silently — from the panel this
+    // looked like a button that randomly does nothing. Re-inject the
+    // content scripts once and retry the action.
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: CONTENT_SCRIPT_FILES,
+      });
+      return await chrome.tabs.sendMessage(tabId, msg);
+    } catch (retryErr) {
+      // Content scripts cannot run on chrome:// or other special pages.
+      return { status: 'no_content_script', message: retryErr.message };
+    }
   }
 }
 

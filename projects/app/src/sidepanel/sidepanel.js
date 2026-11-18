@@ -136,39 +136,142 @@ async function loadAndRenderActiveDeck(deckId) {
  *
  * @param {string} deckId - Identifier used to persist slot state.
  */
+// classList.toggle with a force flag, with a fallback for environments
+// whose classList only carries add/remove.
+function toggleClass(el, name, force) {
+  if (el.classList && typeof el.classList.toggle === 'function') {
+    el.classList.toggle(name, force);
+  } else if (force) {
+    el.classList.add(name);
+  } else {
+    el.classList.remove(name);
+  }
+}
+
+function buildSlotCard(slot, deckId) {
+  const card = document.createElement('div');
+  card.className = `slot-card slot-${slot.type}`;
+  if (slot.dense) card.classList.add('slot-dense');
+
+  if (slot.type !== 'knob') {
+    const label = document.createElement('div');
+    label.className = 'slot-label';
+    label.textContent = slot.label;
+    card.appendChild(label);
+  }
+
+  if (slot.type === 'knob') {
+    renderKnobWidget(card, slot, deckId);
+  } else if (slot.type === 'fader') {
+    renderFaderWidget(card, slot, deckId);
+  } else if (slot.type === 'switch') {
+    renderSwitchWidget(card, slot, deckId);
+  } else if (slot.type === 'flip_switch') {
+    renderFlipSwitchWidget(card, slot, deckId);
+  } else if (slot.type === 'pad2x2' || slot.type === 'pad4x4') {
+    renderMultiPadWidget(card, slot, deckId);
+  } else if (slot.type === 'button') {
+    renderButtonWidget(card, slot, deckId);
+  }
+
+  return card;
+}
+
 function renderDeckSlots(deckId) {
   const container = document.getElementById('slotsContainer');
   if (!container || !currentDeckPreset) return;
 
   container.innerHTML = '';
+  container.classList.remove('pager-viewport');
+  const workspace =
+    typeof document.querySelector === 'function' ? document.querySelector('.deck-workspace') : null;
+  if (workspace) workspace.classList.remove('paged');
 
-  currentDeckPreset.slots.forEach((slot) => {
-    const card = document.createElement('div');
-    card.className = `slot-card slot-${slot.type}`;
+  const pages = currentDeckPreset.pages;
+  if (!pages || pages.length === 0) {
+    currentDeckPreset.slots.forEach((slot) => {
+      container.appendChild(buildSlotCard(slot, deckId));
+    });
+    return;
+  }
 
-    if (slot.type !== 'knob') {
-      const label = document.createElement('div');
-      label.className = 'slot-label';
-      label.textContent = slot.label;
-      card.appendChild(label);
-    }
+  // Paged layout: the deck's slots are grouped into full-height pages
+  // switched by flicking, instead of one long smooth-scrolling column.
+  container.classList.add('pager-viewport');
+  if (workspace) workspace.classList.add('paged');
 
-    if (slot.type === 'knob') {
-      renderKnobWidget(card, slot, deckId);
-    } else if (slot.type === 'fader') {
-      renderFaderWidget(card, slot, deckId);
-    } else if (slot.type === 'switch') {
-      renderSwitchWidget(card, slot, deckId);
-    } else if (slot.type === 'flip_switch') {
-      renderFlipSwitchWidget(card, slot, deckId);
-    } else if (slot.type === 'pad2x2' || slot.type === 'pad4x4') {
-      renderMultiPadWidget(card, slot, deckId);
-    } else if (slot.type === 'button') {
-      renderButtonWidget(card, slot, deckId);
-    }
+  const slotById = new Map(currentDeckPreset.slots.map((s) => [s.id, s]));
+  const track = document.createElement('div');
+  track.className = 'pager-track';
 
-    container.appendChild(card);
+  pages.forEach((slotIds) => {
+    const page = document.createElement('div');
+    page.className = 'pager-page';
+    const grid = document.createElement('div');
+    grid.className = 'slots-grid pager-page-grid';
+    slotIds.forEach((id) => {
+      const slot = slotById.get(id);
+      if (slot) grid.appendChild(buildSlotCard(slot, deckId));
+    });
+    page.appendChild(grid);
+    track.appendChild(page);
   });
+  container.appendChild(track);
+
+  const dots = document.createElement('div');
+  dots.className = 'pager-dots';
+  container.appendChild(dots);
+
+  let currentPage = Math.min(currentDeckPreset.initialPage || 0, pages.length - 1);
+  const dotEls = pages.map((_, i) => {
+    const dot = document.createElement('button');
+    dot.className = 'pager-dot';
+    dot.setAttribute('aria-label', `Page ${i + 1}`);
+    dot.addEventListener('click', () => goToPage(i));
+    dots.appendChild(dot);
+    return dot;
+  });
+
+  function goToPage(i) {
+    currentPage = Math.max(0, Math.min(pages.length - 1, i));
+    track.style.transform = `translateY(${-currentPage * 100}%)`;
+    dotEls.forEach((d, j) => toggleClass(d, 'active', j === currentPage));
+  }
+  goToPage(currentPage);
+
+  // Flick navigation, following the finger: a flick up (finger sweeps
+  // upward) advances to the next page, a flick down goes back — the
+  // pages move the way the finger pushes them.
+  let touchStartY = null;
+  container.addEventListener(
+    'touchstart',
+    (e) => {
+      touchStartY = e.touches[0].clientY;
+    },
+    { passive: true }
+  );
+  container.addEventListener(
+    'touchend',
+    (e) => {
+      if (touchStartY === null) return;
+      const deltaY = touchStartY - e.changedTouches[0].clientY;
+      if (deltaY > 50) goToPage(currentPage + 1);
+      else if (deltaY < -50) goToPage(currentPage - 1);
+      touchStartY = null;
+    },
+    { passive: true }
+  );
+  let lastWheelNav = 0;
+  container.addEventListener(
+    'wheel',
+    (e) => {
+      const now = Date.now();
+      if (Math.abs(e.deltaY) < 24 || now - lastWheelNav < 450) return;
+      lastWheelNav = now;
+      goToPage(currentPage + (e.deltaY > 0 ? 1 : -1));
+    },
+    { passive: true }
+  );
 }
 
 /**
@@ -237,8 +340,36 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
   container.appendChild(wheelControl);
   cardContainer.appendChild(container);
 
+  // Optional merged mute toggle living on the same card (Master Volume
+  // carries Soft Mute this way instead of a separate switch slot).
+  let muteBtn = null;
+  if (slot.muteAction) {
+    muteBtn = document.createElement('button');
+    muteBtn.className = 'mute-toggle-btn';
+    muteBtn.setAttribute('aria-label', 'Mute');
+    cardContainer.appendChild(muteBtn);
+  }
+
   let val =
     currentSlotStates[slot.id] !== undefined ? currentSlotStates[slot.id] : slot.defaultValue;
+
+  if (muteBtn) {
+    let muted = currentSlotStates[`${slot.id}_mute`] === true;
+    const updateMuteUI = () => {
+      muteBtn.textContent = muted ? '🔇' : '🔊';
+      toggleClass(muteBtn, 'muted', muted);
+      muteBtn.setAttribute('aria-pressed', String(muted));
+    };
+    updateMuteUI();
+    muteBtn.addEventListener('click', () => {
+      muted = !muted;
+      currentSlotStates[`${slot.id}_mute`] = muted;
+      saveDeckSlotStates(deckId, currentSlotStates);
+      updateMuteUI();
+      dispatchDeckAction(slot.muteAction, { enabled: muted });
+      if (appSettings.hapticFeedback) triggerHaptic(10);
+    });
+  }
   let unroundedVal = val;
 
   const updateWheelUI = (value) => {
@@ -253,6 +384,13 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
 
   updateWheelUI(val);
 
+  // Feedback ticks fire only when the value crosses a coarse step
+  // (range/20, so 5 units on a 0-100 control), not on every step of the
+  // drag — ticking on every unit makes the sound machine-gun while
+  // sliding and the feedback becomes noise.
+  const tickStep = Math.max(slot.step || 1, (slot.max - slot.min) / 20);
+  let lastTickBucket = Math.floor(val / tickStep);
+
   const applyValue = (newVal) => {
     if (newVal === val) return;
 
@@ -262,8 +400,12 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
     saveDeckSlotStates(deckId, currentSlotStates);
     dispatchDeckAction(slot.action, { value: val });
 
-    if (appSettings.soundEffects) playKnobTickSound();
-    if (appSettings.hapticFeedback) triggerHaptic(8);
+    const bucket = Math.floor(val / tickStep);
+    if (bucket !== lastTickBucket) {
+      lastTickBucket = bucket;
+      if (appSettings.soundEffects) playKnobTickSound();
+      if (appSettings.hapticFeedback) triggerHaptic(8);
+    }
   };
 
   let isDragging = false;
@@ -385,13 +527,18 @@ function renderDiscreteKnobWidget(cardContainer, slot, deckId) {
     tickWrapper.className = 'scale-tick-wrapper';
     tickWrapper.setAttribute('data-index', String(idx));
 
+    const isHome = slot.homeValue !== undefined && Math.abs(optVal - slot.homeValue) < 1e-6;
     const isMajor =
-      idx === 0 || idx === options.length - 1 || optVal === 1.0 || optVal === slot.defaultValue;
+      idx === 0 ||
+      idx === options.length - 1 ||
+      optVal === 1.0 ||
+      optVal === slot.defaultValue ||
+      isHome;
     const tickLine = document.createElement('div');
-    tickLine.className = `scale-tick-line ${isMajor ? 'major' : 'minor'}`;
+    tickLine.className = `scale-tick-line ${isMajor ? 'major' : 'minor'}${isHome ? ' home' : ''}`;
 
     const tickLabel = document.createElement('span');
-    tickLabel.className = 'scale-tick-label';
+    tickLabel.className = `scale-tick-label${isHome ? ' home' : ''}`;
     if (isMajor) {
       tickLabel.textContent = `${optVal}${slot.unit || ''}`;
     }
@@ -610,6 +757,10 @@ function renderFaderWidget(cardContainer, slot, deckId) {
 
   updateFaderUI(val);
 
+  // Same coarse-step tick gating as the wheel control (range/20).
+  const faderTickStep = Math.max(slot.step || 1, (slot.max - slot.min) / 20);
+  let lastFaderTickBucket = Math.floor(val / faderTickStep);
+
   const applyFaderValue = (newVal) => {
     if (newVal === val) return;
 
@@ -619,8 +770,12 @@ function renderFaderWidget(cardContainer, slot, deckId) {
     saveDeckSlotStates(deckId, currentSlotStates);
     dispatchDeckAction(slot.action, { value: val });
 
-    if (appSettings.soundEffects) playKnobTickSound();
-    if (appSettings.hapticFeedback) triggerHaptic(8);
+    const bucket = Math.floor(val / faderTickStep);
+    if (bucket !== lastFaderTickBucket) {
+      lastFaderTickBucket = bucket;
+      if (appSettings.soundEffects) playKnobTickSound();
+      if (appSettings.hapticFeedback) triggerHaptic(8);
+    }
   };
 
   let isDragging = false;
@@ -854,11 +1009,14 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
  */
 function renderMultiPadWidget(cardContainer, slot, _deckId) {
   const is4x4 = slot.type === 'pad4x4';
-  const gridCount = is4x4 ? 16 : 4;
+  // When a slot declares its own pad list, render exactly those pads
+  // (the transport grid has 3: one wide toggle plus two seek pads).
+  const gridCount = is4x4 ? 16 : slot.pads ? slot.pads.length : 4;
   const cols = is4x4 ? 4 : 2;
 
   const padGrid = document.createElement('div');
   padGrid.className = `multipad-grid multipad-${cols}x${cols}`;
+  if (slot.compact) padGrid.classList.add('multipad-compact');
 
   for (let i = 0; i < gridCount; i++) {
     const padDef = (slot.pads && slot.pads[i]) || {
@@ -869,6 +1027,8 @@ function renderMultiPadWidget(cardContainer, slot, _deckId) {
 
     const padBtn = document.createElement('button');
     padBtn.className = 'multipad-button';
+    if (padDef.wide) padBtn.classList.add('pad-wide');
+    if (padDef.hero) padBtn.classList.add('pad-hero');
     padBtn.setAttribute('type', 'button');
     padBtn.setAttribute('data-pad-id', padDef.id);
     padBtn.setAttribute('aria-label', padDef.label);

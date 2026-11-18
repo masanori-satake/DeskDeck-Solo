@@ -552,6 +552,22 @@ html {
   box-shadow: 0 0 8px var(--primary-light);
 }
 
+/* The home tick (e.g. 1.0x on Playback Speed) stays amber so the eye
+   finds the "back to normal" position instantly, even when another
+   tick is the active one. Amber is the Solo series accent colour. */
+.scale-tick-line.home {
+  background-color: #e8b33d;
+}
+
+.scale-tick-wrapper.active .scale-tick-line.home {
+  background-color: #e8b33d;
+  box-shadow: 0 0 8px rgba(232, 179, 61, 0.85);
+}
+
+.scale-tick-label.home {
+  color: #e8b33d;
+}
+
 .scale-tick-label {
   position: absolute;
   bottom: 3px;
@@ -583,12 +599,113 @@ html {
   gap: 6px;
 }
 
+/* Compact grids (e.g. the media transport pads) use half-height pads:
+   transport controls are hit often and do not need full square targets. */
+.multipad-compact .multipad-button {
+  aspect-ratio: 2 / 1;
+}
+
+.multipad-button.pad-wide {
+  grid-column: span 2;
+  aspect-ratio: 2 / 1;
+}
+
+/* Pager layout: full-height pages switched by flicking, no scrolling. */
+.slots-grid.pager-viewport {
+  display: block;
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.deck-workspace.paged {
+  overflow-y: hidden;
+}
+
+.pager-track {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: transform 0.35s ease;
+}
+
+.pager-page {
+  flex: 0 0 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.pager-page-grid {
+  width: 100%;
+}
+
+.pager-dots {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 2;
+}
+
+.pager-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: var(--card-border);
+  cursor: pointer;
+}
+
+.pager-dot.active {
+  background: var(--primary);
+}
+
+.mute-toggle-btn {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--card-border);
+  background: var(--bg-surface);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.mute-toggle-btn.muted {
+  border-color: #ef4444;
+}
+
+/* A wide pad in a compact grid is twice as wide as the other pads, so it
+   needs half their aspect ratio again to end up the same height. */
+.multipad-compact .multipad-button.pad-wide {
+  aspect-ratio: 4 / 1;
+}
+
+/* Dense cards drop the default 160px minimum height and use tighter
+   padding, for decks designed to fit on one screen without scrolling. */
+.slot-card.slot-dense {
+  min-height: 0;
+  padding: 10px 12px;
+}
+
+.slot-card.slot-knob.slot-dense {
+  min-height: 60px;
+}
+
 .multipad-button {
   aspect-ratio: 1 / 1;
   width: 100%;
-  border-radius: 10px;
-  border: 1px solid var(--card-border);
-  background: linear-gradient(180deg, #2d3246 0%, #1e2130 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: linear-gradient(180deg, #363c55 0%, #222635 55%, #1b1e2a 100%);
   /* The pad background is a fixed dark gradient in both color schemes, so
      the foreground must stay light too. Using var(--text-main) here made
      plain glyphs (▲▼ ◀▶, soundboard numbers) render near-black on the
@@ -610,6 +727,20 @@ html {
     background 0.15s ease,
     border-color 0.15s;
   padding: 4px;
+}
+
+/* The one hero pad per deck (Play/Pause on Media) wears the deck's
+   indigo so the thumb finds the main action without reading. */
+.multipad-button.pad-hero {
+  background: linear-gradient(180deg, #818cf8 0%, #6366f1 55%, #4f46e5 100%);
+  border-color: rgba(165, 180, 252, 0.65);
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.4),
+    0 6px 18px rgba(99, 102, 241, 0.45);
+}
+
+.multipad-button.pad-hero .pad-label {
+  color: #e0e7ff;
 }
 
 .multipad-button.pressed,
