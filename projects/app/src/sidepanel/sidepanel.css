@@ -203,6 +203,17 @@ html {
   min-height: 280px;
 }
 
+/* Inside a flick page there is no scrolling to fall back on, so the
+   fader gives up some height instead of pushing its lower end out of
+   reach on short panels. */
+.pager-page-grid .slot-card.slot-fader {
+  min-height: 208px;
+}
+
+.pager-page-grid .fader-track-wrapper {
+  height: 120px;
+}
+
 .slot-card.slot-pad2x2 {
   grid-column: span 2;
 }
@@ -635,12 +646,21 @@ html {
   height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   overflow: hidden;
+}
+
+.pager-page-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 2px 0 10px 2px;
 }
 
 .pager-page-grid {
   width: 100%;
+  flex: 1;
+  align-content: center;
 }
 
 .pager-dots {
@@ -687,6 +707,22 @@ html {
    needs half their aspect ratio again to end up the same height. */
 .multipad-compact .multipad-button.pad-wide {
   aspect-ratio: 4 / 1;
+}
+
+/* The hero pad gets extra height back: it is a two-tier button — a big
+   symbol on the first tier, its name in readable type on the second. */
+.multipad-compact .multipad-button.pad-hero {
+  aspect-ratio: 3 / 1;
+}
+
+.multipad-button.pad-hero .pad-icon-svg {
+  width: 44px;
+  height: 44px;
+}
+
+.multipad-button.pad-hero .pad-label {
+  font-size: 13px;
+  font-weight: 700;
 }
 
 /* Dense cards drop the default 160px minimum height and use tighter
@@ -772,12 +808,46 @@ html {
   line-height: 1;
 }
 
+.pad-icon-svg {
+  width: 30px;
+  height: 30px;
+  fill: currentColor;
+  display: block;
+}
+
+.multipad-button.pad-hero .pad-icon-svg {
+  width: 44px;
+  height: 44px;
+}
+
+.mute-toggle-btn {
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mute-toggle-btn .pad-icon-svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Two-column pad grids put their content on the left of each pad: the
+   panel sits on the right of the screen and the right thumb reaches in
+   from the right edge, covering the right side of whatever it taps.
+   Symbols and labels live where the thumb is not. */
+.multipad-2x2 .multipad-button {
+  align-items: flex-start;
+  padding-left: 16px;
+  text-align: left;
+}
+
 .multipad-4x4 .pad-icon {
   font-size: 14px;
 }
 
 .multipad-button .pad-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   /* Fixed light muted tone for the fixed dark pad background (see above). */
   color: #94a3b8;
@@ -800,8 +870,8 @@ html {
 
 .flip-switch-housing {
   position: relative;
-  width: 76px;
-  height: 96px;
+  width: 92px;
+  height: 64px;
   background-color: #12141c;
   border: 2px solid var(--card-border);
   border-radius: 12px;
@@ -816,28 +886,28 @@ html {
 }
 
 .flip-switch-base {
-  width: 60px;
-  height: 80px;
+  width: 76px;
+  height: 48px;
   background: radial-gradient(circle at 50% 50%, #2a2e40, #161824);
   border-radius: 8px;
   border: 1px solid var(--card-border);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 0;
+  padding: 0 10px;
   cursor: pointer;
 }
 
 .flip-switch-lever {
-  width: 18px;
-  height: 40px;
-  background: linear-gradient(180deg, #94a3b8 0%, #475569 100%);
+  width: 40px;
+  height: 18px;
+  background: linear-gradient(90deg, #94a3b8 0%, #475569 100%);
   border-radius: 4px;
   border: 1px solid #cbd5e1;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-  transform-origin: bottom center;
-  transform: rotateX(25deg);
+  transform-origin: left center;
+  transform: rotateY(-25deg);
   transition:
     transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
     background 0.2s,
@@ -845,10 +915,31 @@ html {
 }
 
 .flip-switch-lever.active {
-  transform: rotateX(-25deg);
-  background: linear-gradient(180deg, var(--danger) 0%, #b91c1c 100%);
+  transform: rotateY(25deg);
+  background: linear-gradient(90deg, var(--danger) 0%, #b91c1c 100%);
   border-color: #fca5a5;
   box-shadow: 0 0 12px var(--danger-glow);
+}
+
+/* Momentary variant: the base is one large symbol button that fills
+   most of the housing, not a small lever parked at one side. */
+.flip-switch-base.flip-base-action {
+  width: 84px;
+  height: 54px;
+  justify-content: center;
+  padding: 0;
+  /* The base background is a fixed dark gradient in both themes, so
+     the symbol needs a fixed light colour (same trap as the pads). */
+  color: #f8fafc;
+}
+
+.flip-base-action .pad-icon-svg {
+  width: 34px;
+  height: 34px;
+}
+
+.flip-base-action.pressed {
+  filter: brightness(1.5);
 }
 
 .flip-switch-led {
@@ -880,8 +971,8 @@ html {
   box-shadow:
     inset 0 2px 8px rgba(255, 255, 255, 0.2),
     0 4px 12px rgba(0, 0, 0, 0.4);
-  transform-origin: top center;
-  transform: rotateX(0deg);
+  transform-origin: left center;
+  transform: rotateY(0deg);
   transition:
     transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
     background-color 0.2s;
@@ -894,7 +985,7 @@ html {
 }
 
 .flip-switch-housing.cover-open .flip-switch-cover {
-  transform: rotateX(-120deg);
+  transform: rotateY(-105deg);
   background: rgba(239, 68, 68, 0.08);
   box-shadow: none;
   border-style: solid;
@@ -918,10 +1009,10 @@ html {
 
 @keyframes flipSwipeHint {
   0% {
-    transform: rotateX(0deg);
+    transform: rotateY(0deg);
   }
   50% {
-    transform: rotateX(-25deg);
+    transform: rotateY(-25deg);
   }
   100% {
     transform: rotateX(0deg);
@@ -1032,6 +1123,11 @@ html {
 .hw-button .btn-icon {
   font-size: 22px;
   line-height: 1;
+}
+
+.hw-button .btn-icon .pad-icon-svg {
+  width: 22px;
+  height: 22px;
 }
 
 .hw-button .btn-text {

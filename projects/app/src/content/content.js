@@ -97,18 +97,66 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
     }
 
-    case 'seek_dial':
-    case 'scroll_dial': {
+    case 'seek_dial': {
       // Relative seek from jog dial rotation
       if (payload && payload.value !== undefined) {
         const deltaSeconds = (payload.value - 50) * 0.2;
         if (deltaSeconds !== 0) {
           seekVideo(deltaSeconds, true);
         }
-      } else {
-        // Fallback for general page scroll dial
-        const delta = ((payload ? payload.value : 50) - 50) * 10;
-        window.scrollBy({ top: delta, behavior: 'smooth' });
+      }
+      sendResponse({ handled: true });
+      break;
+    }
+
+    case 'scroll_dial': {
+      // Standard deck Scroll Wheel. This case used to be shared with
+      // seek_dial, so the wheel seeked the (usually absent) video and
+      // never scrolled the page. The knob sends absolute values; the
+      // page scrolls by the delta from the previous value, scaled by
+      // the Scroll Speed factor. The first message after load only
+      // syncs the baseline (the panel may hold a value from another
+      // tab), it does not scroll.
+      if (payload) {
+        // The panel's displayed Scroll Speed travels with the scroll
+        // message, so a freshly loaded tab scrolls at the shown rate
+        // instead of this script's default.
+        if (
+          typeof payload.speedFactor === 'number' &&
+          payload.speedFactor >= 1 &&
+          payload.speedFactor <= 10
+        ) {
+          scrollSpeedFactor = payload.speedFactor;
+        }
+        if (typeof payload.delta === 'number') {
+          // Relative movement from the endless wheel: works even at
+          // what used to be the knob's end stops.
+          if (payload.delta !== 0) {
+            window.scrollBy(0, payload.delta * 4 * scrollSpeedFactor);
+          }
+          lastScrollDialValue = null;
+        } else if (payload.value !== undefined) {
+          if (lastScrollDialValue === null) {
+            lastScrollDialValue = payload.value;
+          } else {
+            const deltaSteps = payload.value - lastScrollDialValue;
+            lastScrollDialValue = payload.value;
+            if (deltaSteps !== 0) {
+              window.scrollBy(0, deltaSteps * 4 * scrollSpeedFactor);
+            }
+          }
+        }
+      }
+      sendResponse({ handled: true });
+      break;
+    }
+
+    case 'set_scroll_speed': {
+      // Standard deck Scroll Speed (1x..10x). There was no handler for
+      // this action anywhere, so the knob changed nothing.
+      const factor = payload ? payload.value : undefined;
+      if (typeof factor === 'number' && factor >= 1 && factor <= 10) {
+        scrollSpeedFactor = factor;
       }
       sendResponse({ handled: true });
       break;
@@ -141,11 +189,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       else if (padId === 'fwd10' || padId === 'next') skipMediaTrack(10);
       else if (padId === 'pip') togglePictureInPicture();
       else if (padId === 'fullscreen') {
+        const wasFullscreen = !!document.fullscreenElement;
         if (!document.fullscreenElement) {
           document.documentElement.requestFullscreen().catch(() => {});
         } else {
           document.exitFullscreen().catch(() => {});
         }
+        if (!wasFullscreen) verifyFullscreenSoon(getPrimaryVideoElement());
       }
       // 'prev_video'/'next_video' intentionally do nothing on generic
       // pages: there is no playlist to move through. Site-specific
@@ -165,14 +215,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
     }
 
-    case 'toggle_fullscreen':
+    case 'toggle_fullscreen': {
+      const wasFullscreen = !!document.fullscreenElement;
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
       } else {
         document.exitFullscreen().catch(() => {});
       }
+      if (!wasFullscreen) verifyFullscreenSoon(getPrimaryVideoElement());
       sendResponse({ handled: true });
       break;
+    }
 
     case 'set_mic_level':
       setMicLevel(payload ? payload.value : 100);
@@ -330,6 +383,8 @@ function skipMediaTrack(seconds) {
   seekVideo(seconds, true);
 }
 
+let lastScrollDialValue = null;
+let scrollSpeedFactor = 5;
 let seekToastEl = null;
 let seekToastTimer = null;
 
@@ -378,6 +433,61 @@ function showSeekFeedback(video, deltaSeconds, landedTime, totalDuration) {
   }, 1200);
 }
 
+function showInfoToast(video, text) {
+  if (!video) return;
+  const rect = video.getBoundingClientRect();
+  if (!rect || rect.width === 0 || rect.height === 0) return;
+
+  if (!seekToastEl) {
+    seekToastEl = document.createElement('div');
+    seekToastEl.style.cssText =
+      'position:fixed;z-index:2147483647;pointer-events:none;' +
+      'background:rgba(0,0,0,0.78);color:#fff;' +
+      'font:600 14px/1.4 system-ui,sans-serif;padding:8px 16px;' +
+      'border-radius:999px;transform:translateX(-50%);' +
+      'opacity:0;transition:opacity 0.18s ease;white-space:nowrap;';
+    document.documentElement.appendChild(seekToastEl);
+  }
+
+  seekToastEl.textContent = text;
+  seekToastEl.style.left = `${rect.left + rect.width / 2}px`;
+  seekToastEl.style.top = `${rect.top + Math.max(12, rect.height * 0.12)}px`;
+  seekToastEl.style.opacity = '1';
+
+  if (seekToastTimer) clearTimeout(seekToastTimer);
+  seekToastTimer = setTimeout(() => {
+    if (seekToastEl) seekToastEl.style.opacity = '0';
+  }, 2400);
+}
+
+/**
+ * Fullscreen requires a recent real touch inside the page (transient
+ * activation); a side-panel click does not count. Verify the outcome
+ * instead of reading activation state: a successful request consumes
+ * the activation, so checking it afterwards flags successes as
+ * failures. Only report when fullscreen really did not engage.
+ */
+function verifyFullscreenSoon(video) {
+  // Entering and leaving again within the window still counts as
+  // success, so record entry via the event, not the end state.
+  let entered = false;
+  const onFsChange = () => {
+    if (document.fullscreenElement) entered = true;
+  };
+  document.addEventListener('fullscreenchange', onFsChange);
+  setTimeout(() => {
+    document.removeEventListener('fullscreenchange', onFsChange);
+    if (entered || document.fullscreenElement) return;
+    if (!document.fullscreenEnabled) {
+      // Forbidden by the page's policy; touching the video cannot
+      // change that, so do not suggest it.
+      showInfoToast(video, 'このページでは全画面にできません');
+    } else {
+      showInfoToast(video, '全画面にできませんでした。動画タッチ直後に押してください');
+    }
+  }, 900);
+}
+
 function seekVideo(seconds, isRelative = true) {
   const video = getPrimaryVideoElement();
   if (video) {
@@ -420,15 +530,41 @@ async function togglePictureInPicture() {
   }
 
   const video = getPrimaryVideoElement();
-  if (video && document.pictureInPictureEnabled) {
-    try {
-      await video.requestPictureInPicture();
-    } catch (err) {
-      // Expected when the trigger came from the side panel (the page
-      // has no user activation); not an error worth surfacing.
-      console.debug('Request PiP failed:', err);
-    }
+  if (!video || !document.pictureInPictureEnabled) {
+    // PiP is unavailable on this page; touching the video cannot
+    // change that, so do not suggest it.
+    return;
   }
+  // The listener goes on before the request: the event can fire
+  // before an awaited request resolves, and opening then closing
+  // within the window still counts as success.
+  let entered = false;
+  const onEnter = () => {
+    entered = true;
+  };
+  video.addEventListener('enterpictureinpicture', onEnter);
+  // Judged later, but read now: by notification time the metadata
+  // may have finished loading, changing what the rejection meant.
+  const readyStateAtRequest = video.readyState;
+  let requestErrorName = null;
+  try {
+    await video.requestPictureInPicture();
+    entered = true;
+  } catch (err) {
+    // Expected when the trigger came from the side panel (the page
+    // has no user activation); not an error worth surfacing.
+    requestErrorName = err && err.name;
+    console.debug('Request PiP failed:', err);
+  }
+  setTimeout(() => {
+    video.removeEventListener('enterpictureinpicture', onEnter);
+    if (entered || document.pictureInPictureElement) return;
+    if (requestErrorName === 'InvalidStateError' && readyStateAtRequest === 0) {
+      showInfoToast(video, '動画の読み込みが終わってから押してください');
+    } else {
+      showInfoToast(video, 'PiPにできませんでした。動画タッチ直後に押してください');
+    }
+  }, 900);
 }
 
 function setMicLevel(valPercent) {

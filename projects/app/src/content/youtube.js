@@ -183,6 +183,57 @@
     }, 1200);
   }
 
+  function showInfoToast(video, text) {
+    if (!video) return;
+    const rect = video.getBoundingClientRect();
+    if (!rect || rect.width === 0 || rect.height === 0) return;
+
+    if (!seekToastEl) {
+      seekToastEl = document.createElement('div');
+      seekToastEl.style.cssText =
+        'position:fixed;z-index:2147483647;pointer-events:none;' +
+        'background:rgba(0,0,0,0.78);color:#fff;' +
+        'font:600 14px/1.4 system-ui,sans-serif;padding:8px 16px;' +
+        'border-radius:999px;transform:translateX(-50%);' +
+        'opacity:0;transition:opacity 0.18s ease;white-space:nowrap;';
+      document.documentElement.appendChild(seekToastEl);
+    }
+
+    seekToastEl.textContent = text;
+    seekToastEl.style.left = `${rect.left + rect.width / 2}px`;
+    seekToastEl.style.top = `${rect.top + Math.max(12, rect.height * 0.12)}px`;
+    seekToastEl.style.opacity = '1';
+
+    if (seekToastTimer) clearTimeout(seekToastTimer);
+    seekToastTimer = setTimeout(() => {
+      if (seekToastEl) seekToastEl.style.opacity = '0';
+    }, 2400);
+  }
+
+  /**
+   * Tap an element the way a finger would: the full pointer/mouse
+   * sequence, not a bare click(). Some player controls arm their
+   * handlers on pointerdown and ignore a synthetic click alone.
+   */
+  function tapElement(el) {
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const opts = {
+      bubbles: true,
+      cancelable: true,
+      clientX: rect.left + rect.width / 2,
+      clientY: rect.top + rect.height / 2,
+      pointerId: 1,
+      pointerType: 'touch',
+      isPrimary: true,
+    };
+    el.dispatchEvent(new PointerEvent('pointerdown', opts));
+    el.dispatchEvent(new MouseEvent('mousedown', opts));
+    el.dispatchEvent(new PointerEvent('pointerup', opts));
+    el.dispatchEvent(new MouseEvent('mouseup', opts));
+    el.dispatchEvent(new MouseEvent('click', opts));
+  }
+
   /**
    * Change playback speed (0.25x - 3.0x)
    * @param {number} rate - Target playback rate
@@ -201,10 +252,14 @@
     }
   }
 
+  let pipRequestSeq = 0;
+  let pendingPipCheck = null;
+
   /**
    * Toggle Picture-in-Picture mode
    */
   async function togglePip() {
+    const requestSeq = ++pipRequestSeq;
     const video = getYouTubeVideo();
 
     if (document.pictureInPictureElement) {
@@ -223,19 +278,57 @@
     // even though the fallback then worked. The API stays as the
     // fallback for layouts without the button, and its (expected)
     // rejection is only debug-logged.
+    // Only the latest request verifies: a new attempt retires the
+    // previous attempt's listener and timer, so an earlier failure
+    // can neither report nor claim a later attempt's success.
+    if (pendingPipCheck) {
+      clearTimeout(pendingPipCheck.timer);
+      // A no-video attempt stores a null video: guard the removal,
+      // but always retire the stale check so the next attempt works.
+      if (pendingPipCheck.video) {
+        pendingPipCheck.video.removeEventListener('enterpictureinpicture', pendingPipCheck.onEnter);
+      }
+      pendingPipCheck = null;
+    }
+    // The listener goes on before the attempt: on the API path the
+    // event can fire before the awaited request resolves, and a named
+    // listener can be removed when the check window closes (a
+    // once-only listener would linger after every failure).
+    let entered = false;
+    const onEnter = () => {
+      entered = true;
+    };
+    if (video) video.addEventListener('enterpictureinpicture', onEnter);
+
     const pipBtn = document.querySelector('.ytp-pip-button');
     if (pipBtn) {
-      pipBtn.click();
-      return;
-    }
-
-    if (video && document.pictureInPictureEnabled) {
+      tapElement(pipBtn);
+    } else if (video && document.pictureInPictureEnabled) {
       try {
         await video.requestPictureInPicture();
+        entered = true;
       } catch (err) {
         console.debug('YouTube video.requestPictureInPicture failed:', err);
       }
     }
+
+    // Verify instead of guessing: if PiP did not engage, say so on the
+    // video itself rather than failing silently. Opening and closing
+    // again within the window still counts as success.
+    if (requestSeq !== pipRequestSeq) {
+      // Superseded while awaiting the request: the newer attempt owns
+      // verification now.
+      if (video) video.removeEventListener('enterpictureinpicture', onEnter);
+      return;
+    }
+    const timer = setTimeout(() => {
+      pendingPipCheck = null;
+      if (video) video.removeEventListener('enterpictureinpicture', onEnter);
+      if (!entered && !document.pictureInPictureElement) {
+        showInfoToast(video, 'PiPにできませんでした。動画タッチ直後に押してください');
+      }
+    }, 900);
+    pendingPipCheck = { timer, video, onEnter };
   }
 
   /**
@@ -348,8 +441,13 @@
 
       case 'seek_dial':
       case 'scroll_dial': {
-        const value = payload.value ?? 50;
-        const deltaSeconds = (value - 50) * 0.2; // Dial rotation mapped to relative seek
+        // The endless Scroll Wheel sends its relative movement: a
+        // clamped absolute value would stall the seek at the end
+        // stops, the same reason the page-scroll side takes a delta.
+        const deltaSeconds =
+          typeof payload.delta === 'number'
+            ? payload.delta * 0.2
+            : ((payload.value ?? 50) - 50) * 0.2; // Dial rotation mapped to relative seek
         if (deltaSeconds !== 0) {
           seek(deltaSeconds, true);
         }
@@ -406,13 +504,31 @@
           // user activation the page needs, and in practice only works
           // after the video itself was clicked. The button path works
           // without that warm-up click.
+          const wasFullscreen = !!document.fullscreenElement;
           const fsBtn = document.querySelector('.ytp-fullscreen-button');
           if (fsBtn) {
-            fsBtn.click();
+            tapElement(fsBtn);
           } else if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen().catch(() => {});
           } else {
             document.exitFullscreen().catch(() => {});
+          }
+          if (!wasFullscreen) {
+            // Verify instead of guessing: if fullscreen did not engage,
+            // tell the user on the video itself. Entering and leaving
+            // again within the window still counts as success.
+            const video = getYouTubeVideo();
+            let entered = false;
+            const onFsChange = () => {
+              if (document.fullscreenElement) entered = true;
+            };
+            document.addEventListener('fullscreenchange', onFsChange);
+            setTimeout(() => {
+              document.removeEventListener('fullscreenchange', onFsChange);
+              if (!entered && !document.fullscreenElement) {
+                showInfoToast(video, '全画面にできませんでした。動画タッチ直後に押してください');
+              }
+            }, 900);
           }
         } else if (padId === 'prev') prevTrack();
         else if (padId === 'next') nextTrack();

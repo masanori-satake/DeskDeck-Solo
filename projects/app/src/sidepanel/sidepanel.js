@@ -148,12 +148,31 @@ function toggleClass(el, name, force) {
   }
 }
 
+function persistSlotStates(deckId) {
+  const states = { ...currentSlotStates };
+  if (currentDeckPreset) {
+    currentDeckPreset.slots.forEach((slot) => {
+      if (slot.endless) delete states[slot.id];
+    });
+  }
+  saveDeckSlotStates(deckId, states);
+}
+
 function buildSlotCard(slot, deckId) {
   const card = document.createElement('div');
   card.className = `slot-card slot-${slot.type}`;
   if (slot.dense) card.classList.add('slot-dense');
 
-  if (slot.type !== 'knob') {
+  // Pad grids carry no card title: area names like "Transport Pad Grid"
+  // tell the user nothing, and each page now has its own category title.
+  // The pads themselves are labelled.
+  if (
+    slot.type !== 'knob' &&
+    slot.type !== 'pad2x2' &&
+    slot.type !== 'pad4x4' &&
+    slot.type !== 'button' &&
+    !slot.hideLabel
+  ) {
     const label = document.createElement('div');
     label.className = 'slot-label';
     label.textContent = slot.label;
@@ -177,9 +196,17 @@ function buildSlotCard(slot, deckId) {
   return card;
 }
 
+let pagerAbortController = null;
+
 function renderDeckSlots(deckId) {
   const container = document.getElementById('slotsContainer');
   if (!container || !currentDeckPreset) return;
+
+  // The pager listeners below live on the persistent container, not on
+  // the re-rendered children: without this, every deck switch stacks
+  // another set that keeps acting on detached tracks.
+  if (pagerAbortController) pagerAbortController.abort();
+  pagerAbortController = new AbortController();
 
   container.innerHTML = '';
   container.classList.remove('pager-viewport');
@@ -204,12 +231,18 @@ function renderDeckSlots(deckId) {
   const track = document.createElement('div');
   track.className = 'pager-track';
 
-  pages.forEach((slotIds) => {
+  pages.forEach((pageDef) => {
     const page = document.createElement('div');
     page.className = 'pager-page';
+    if (pageDef.title) {
+      const title = document.createElement('div');
+      title.className = 'pager-page-title';
+      title.textContent = pageDef.title;
+      page.appendChild(title);
+    }
     const grid = document.createElement('div');
     grid.className = 'slots-grid pager-page-grid';
-    slotIds.forEach((id) => {
+    (pageDef.slots || []).forEach((id) => {
       const slot = slotById.get(id);
       if (slot) grid.appendChild(buildSlotCard(slot, deckId));
     });
@@ -243,23 +276,75 @@ function renderDeckSlots(deckId) {
   // upward) advances to the next page, a flick down goes back — the
   // pages move the way the finger pushes them.
   let touchStartY = null;
+  let touchStartX = null;
+  let touchStartId = null;
+  let touchStartOnCover = false;
   container.addEventListener(
     'touchstart',
     (e) => {
-      touchStartY = e.touches[0].clientY;
+      // Track one finger only: a second finger's touchstart must not
+      // overwrite the first finger's start point, and the id, the
+      // coordinates and the target all come from that same Touch.
+      if (touchStartId !== null) return;
+      const t = e.changedTouches[0];
+      touchStartY = t.clientY;
+      touchStartX = t.clientX;
+      touchStartId = t.identifier;
+      // A gesture that starts on a flip-switch cover belongs to the
+      // cover, even if it drifts vertically.
+      touchStartOnCover = !!(
+        e.target &&
+        e.target.closest &&
+        e.target.closest('.flip-switch-housing')
+      );
     },
-    { passive: true }
+    { passive: true, signal: pagerAbortController.signal }
   );
   container.addEventListener(
     'touchend',
     (e) => {
       if (touchStartY === null) return;
-      const deltaY = touchStartY - e.changedTouches[0].clientY;
-      if (deltaY > 50) goToPage(currentPage + 1);
-      else if (deltaY < -50) goToPage(currentPage - 1);
+      // Compare the same finger that started the gesture; another
+      // finger lifting first must not move the page.
+      let endTouch = null;
+      for (const t of e.changedTouches) {
+        if (t.identifier === touchStartId) endTouch = t;
+      }
+      // A different finger lifting first leaves the tracked gesture
+      // alive; only the tracked finger's end settles it.
+      if (!endTouch) return;
+      if (!touchStartOnCover) {
+        const deltaY = touchStartY - endTouch.clientY;
+        const deltaX = touchStartX - endTouch.clientX;
+        // Predominantly vertical only: a horizontal knob drag that
+        // drifts a little vertically must not flip the page.
+        if (Math.abs(deltaY) > 50 && Math.abs(deltaY) > Math.abs(deltaX) * 1.5) {
+          if (deltaY > 0) goToPage(currentPage + 1);
+          else goToPage(currentPage - 1);
+        }
+      }
       touchStartY = null;
+      touchStartX = null;
+      touchStartId = null;
+      touchStartOnCover = false;
     },
-    { passive: true }
+    { passive: true, signal: pagerAbortController.signal }
+  );
+  container.addEventListener(
+    'touchcancel',
+    (e) => {
+      // A cancelled tracked finger ends the gesture without moving
+      // the page; any other finger's cancel leaves tracking alone.
+      for (const t of e.changedTouches) {
+        if (t.identifier === touchStartId) {
+          touchStartY = null;
+          touchStartX = null;
+          touchStartId = null;
+          touchStartOnCover = false;
+        }
+      }
+    },
+    { passive: true, signal: pagerAbortController.signal }
   );
   let lastWheelNav = 0;
   container.addEventListener(
@@ -270,7 +355,7 @@ function renderDeckSlots(deckId) {
       lastWheelNav = now;
       goToPage(currentPage + (e.deltaY > 0 ? 1 : -1));
     },
-    { passive: true }
+    { passive: true, signal: pagerAbortController.signal }
   );
 }
 
@@ -350,13 +435,22 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
     cardContainer.appendChild(muteBtn);
   }
 
-  let val =
-    currentSlotStates[slot.id] !== undefined ? currentSlotStates[slot.id] : slot.defaultValue;
+  let val = slot.endless
+    ? slot.defaultValue
+    : currentSlotStates[slot.id] !== undefined
+      ? currentSlotStates[slot.id]
+      : slot.defaultValue;
 
   if (muteBtn) {
     let muted = currentSlotStates[`${slot.id}_mute`] === true;
     const updateMuteUI = () => {
-      muteBtn.textContent = muted ? '🔇' : '🔊';
+      muteBtn.textContent = '';
+      const icon = createPadIcon(muted ? 'volumeOff' : 'volumeOn');
+      if (icon) {
+        muteBtn.appendChild(icon);
+      } else {
+        muteBtn.textContent = muted ? '🔇' : '🔊';
+      }
       toggleClass(muteBtn, 'muted', muted);
       muteBtn.setAttribute('aria-pressed', String(muted));
     };
@@ -364,7 +458,7 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
     muteBtn.addEventListener('click', () => {
       muted = !muted;
       currentSlotStates[`${slot.id}_mute`] = muted;
-      saveDeckSlotStates(deckId, currentSlotStates);
+      persistSlotStates(deckId);
       updateMuteUI();
       dispatchDeckAction(slot.muteAction, { enabled: muted });
       if (appSettings.hapticFeedback) triggerHaptic(10);
@@ -391,14 +485,39 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
   const tickStep = Math.max(slot.step || 1, (slot.max - slot.min) / 20);
   let lastTickBucket = Math.floor(val / tickStep);
 
+  let dispatchBase = val;
+
+  const recenterWheel = () => {
+    // Endless wheels (Scroll Wheel) rest at the centre: the position
+    // carries no meaning, and resting at an end stop would kill
+    // further movement in that direction.
+    val = slot.defaultValue;
+    unroundedVal = val;
+    dispatchBase = val;
+    currentSlotStates[slot.id] = val;
+    lastTickBucket = Math.floor(val / tickStep);
+    updateWheelUI(val);
+    // The resting position carries no meaning and is not persisted.
+  };
+
   const applyValue = (newVal) => {
     if (newVal === val) return;
 
     val = newVal;
     currentSlotStates[slot.id] = val;
     updateWheelUI(val);
-    saveDeckSlotStates(deckId, currentSlotStates);
-    dispatchDeckAction(slot.action, { value: val });
+    if (!slot.endless) persistSlotStates(deckId);
+    const payload = { value: val };
+    if (slot.endless) {
+      payload.delta = newVal - dispatchBase;
+      dispatchBase = newVal;
+    }
+    if (slot.action === 'scroll_dial' && typeof currentSlotStates.speed_fader === 'number') {
+      // The receiving tab may be freshly loaded and still hold the
+      // default factor; send the displayed one along.
+      payload.speedFactor = currentSlotStates.speed_fader;
+    }
+    dispatchDeckAction(slot.action, payload);
 
     const bucket = Math.floor(val / tickStep);
     if (bucket !== lastTickBucket) {
@@ -439,6 +558,7 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
   const onPointerUp = (e) => {
     if (isDragging) {
       isDragging = false;
+      if (slot.endless) recenterWheel();
       wheelControl.classList.remove('dragging');
       try {
         wheelControl.releasePointerCapture(e.pointerId);
@@ -462,6 +582,7 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
       const newVal = Math.max(slot.min, Math.min(slot.max, val + direction * step));
       unroundedVal = newVal;
       applyValue(newVal);
+      if (slot.endless) recenterWheel();
     },
     { passive: false }
   );
@@ -480,6 +601,7 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
     const newVal = Math.max(slot.min, Math.min(slot.max, val + direction * step));
     unroundedVal = newVal;
     applyValue(newVal);
+    if (slot.endless) recenterWheel();
   });
 }
 
@@ -586,7 +708,7 @@ function renderDiscreteKnobWidget(cardContainer, slot, deckId) {
     currentSlotStates[slot.id] = currentVal;
 
     updateDiscreteUI(currentIndex);
-    saveDeckSlotStates(deckId, currentSlotStates);
+    persistSlotStates(deckId);
     dispatchDeckAction(slot.action, { value: currentVal });
 
     if (appSettings.soundEffects) playSwitchSound(true);
@@ -767,7 +889,7 @@ function renderFaderWidget(cardContainer, slot, deckId) {
     val = newVal;
     currentSlotStates[slot.id] = val;
     updateFaderUI(val);
-    saveDeckSlotStates(deckId, currentSlotStates);
+    persistSlotStates(deckId);
     dispatchDeckAction(slot.action, { value: val });
 
     const bucket = Math.floor(val / faderTickStep);
@@ -845,7 +967,12 @@ function renderFaderWidget(cardContainer, slot, deckId) {
 }
 
 /**
- * Render Protective Flip Switch with 2-Step Upward Swipe & Tap Interaction
+ * Render Protective Flip Switch with 2-Step Sideways Swipe & Tap
+ * Interaction. The cover used to open upward, but a vertical drag on
+ * the cover was indistinguishable from the deck pager's flick, so
+ * closing the cover flipped the page. The cover now swings open
+ * sideways like a door, and the housing is wide and low instead of
+ * tall, which also returns page height to the decks that use it.
  */
 function renderFlipSwitchWidget(cardContainer, slot, deckId) {
   const wrapper = document.createElement('div');
@@ -864,42 +991,50 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
 
   const coverLabel = document.createElement('span');
   coverLabel.className = 'flip-switch-cover-label';
-  coverLabel.textContent = 'SWIPE ▲';
+  coverLabel.textContent = 'SWIPE ◀';
   cover.appendChild(coverLabel);
 
-  // Switch base & lever inside
+  // Switch base & lever inside. A momentary slot (Camera Guard) holds
+  // no state — the extension cannot know the real camera state — so
+  // its base is a single large symbol button that only fires.
+  const isMomentary = !!slot.momentary;
   const base = document.createElement('div');
   base.className = 'flip-switch-base';
-  base.setAttribute('role', 'switch');
   base.setAttribute('tabindex', '0');
   base.setAttribute('aria-label', slot.label);
 
-  const isSwitchedOn = !!currentSlotStates[slot.id];
-  base.setAttribute('aria-checked', String(isSwitchedOn));
-  const lever = document.createElement('div');
-  lever.className = `flip-switch-lever ${isSwitchedOn ? 'active' : ''}`;
+  const isSwitchedOn = !isMomentary && !!currentSlotStates[slot.id];
+  let lever = null;
+  let statusLed = null;
+  if (isMomentary) {
+    base.classList.add('flip-base-action');
+    base.setAttribute('role', 'button');
+    const icon = createPadIcon(slot.iconSvg || 'camera');
+    if (icon) base.appendChild(icon);
+  } else {
+    base.setAttribute('role', 'switch');
+    base.setAttribute('aria-checked', String(isSwitchedOn));
+    lever = document.createElement('div');
+    lever.className = `flip-switch-lever ${isSwitchedOn ? 'active' : ''}`;
 
-  const statusLed = document.createElement('div');
-  statusLed.className = `flip-switch-led ${isSwitchedOn ? 'active' : ''}`;
+    statusLed = document.createElement('div');
+    statusLed.className = `flip-switch-led ${isSwitchedOn ? 'active' : ''}`;
 
-  base.appendChild(lever);
-  base.appendChild(statusLed);
+    base.appendChild(lever);
+    base.appendChild(statusLed);
+  }
 
   housing.appendChild(base);
   housing.appendChild(cover);
 
-  const statusText = document.createElement('span');
-  statusText.className = 'flip-switch-status';
-  statusText.textContent = isSwitchedOn ? 'ARMED / ON' : 'OFF';
-
   wrapper.appendChild(housing);
-  wrapper.appendChild(statusText);
   cardContainer.appendChild(wrapper);
 
   let isCoverOpen = false;
-  let dragStartY = 0;
+  let dragStartX = 0;
   let isCoverDragging = false;
   let didCoverDrag = false;
+  let suppressBaseClick = false;
 
   const setCoverOpen = (open) => {
     if (open === isCoverOpen) return;
@@ -911,48 +1046,90 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
     if (appSettings.hapticFeedback) triggerHaptic(isCoverOpen ? 12 : 8);
   };
 
-  const onCoverPointerDown = (e) => {
+  let housingCaptured = false;
+  let coverPointerId = null;
+
+  const onHousingPointerDown = (e) => {
+    if (isCoverDragging) return;
     isCoverDragging = true;
+    coverPointerId = e.pointerId;
     didCoverDrag = false;
-    dragStartY = e.clientY;
-    try {
-      cover.setPointerCapture(e.pointerId);
-    } catch {
-      // ignore
-    }
+    suppressBaseClick = false;
+    dragStartX = e.clientX;
+    // No pointer capture yet: capturing on pointerdown retargets the
+    // following click to the housing, which would eat plain taps on
+    // the base. Capture starts once the gesture is really a drag.
   };
 
-  const onCoverPointerMove = (e) => {
-    if (!isCoverDragging) return;
-    const deltaY = e.clientY - dragStartY;
+  const onHousingPointerMove = (e) => {
+    if (!isCoverDragging || e.pointerId !== coverPointerId) return;
+    if (e.buttons === 0) {
+      // The press ended outside the housing before capture started;
+      // drop the stale drag instead of acting on a later hover.
+      isCoverDragging = false;
+      coverPointerId = null;
+      didCoverDrag = false;
+      return;
+    }
+    if (didCoverDrag) return;
+    const deltaX = e.clientX - dragStartX;
 
-    if (deltaY < -15 && !isCoverOpen) {
+    if (!housingCaptured && Math.abs(deltaX) > 6) {
+      housingCaptured = true;
+      try {
+        housing.setPointerCapture(e.pointerId);
+      } catch {
+        // ignore
+      }
+    }
+
+    if (deltaX < -15 && !isCoverOpen) {
       didCoverDrag = true;
       setCoverOpen(true);
-    } else if (deltaY > 15 && isCoverOpen) {
+    } else if (Math.abs(deltaX) > 15 && isCoverOpen) {
       didCoverDrag = true;
       setCoverOpen(false);
     }
   };
 
-  const onCoverPointerUp = (e) => {
-    if (isCoverDragging) {
+  const onHousingPointerUp = (e) => {
+    if (isCoverDragging && e.pointerId === coverPointerId) {
       isCoverDragging = false;
-      try {
-        cover.releasePointerCapture(e.pointerId);
-      } catch {
-        // ignore
+      coverPointerId = null;
+      if (didCoverDrag) suppressBaseClick = true;
+      if (housingCaptured) {
+        housingCaptured = false;
+        try {
+          housing.releasePointerCapture(e.pointerId);
+        } catch {
+          // ignore
+        }
       }
     }
   };
 
-  cover.addEventListener('pointerdown', onCoverPointerDown);
-  cover.addEventListener('pointermove', onCoverPointerMove);
-  cover.addEventListener('pointerup', onCoverPointerUp);
-  cover.addEventListener('pointercancel', onCoverPointerUp);
+  housing.addEventListener('pointerdown', onHousingPointerDown);
+  housing.addEventListener('pointermove', onHousingPointerMove);
+  housing.addEventListener('pointerup', onHousingPointerUp);
+  housing.addEventListener('pointercancel', onHousingPointerUp);
+  housing.addEventListener('pointerleave', (e) => {
+    // The press ended outside the housing before capture started, so
+    // no pointerup ever arrives: end the stale drag here, or the next
+    // touch swipe on the cover is refused. Only the tracked pointer,
+    // before capture, may end the drag this way.
+    if (!housingCaptured && isCoverDragging && e.pointerId === coverPointerId) {
+      isCoverDragging = false;
+      coverPointerId = null;
+      didCoverDrag = false;
+    }
+  });
 
-  cover.addEventListener('click', () => {
+  // Tap toggles the cover. The handler sits on the housing (pointer
+  // capture retargets clicks there after any drag), and clicks that
+  // land on the base belong to the switch itself, not the cover.
+  housing.addEventListener('click', (e) => {
     if (didCoverDrag) return;
+    if (base.contains(e.target)) return;
     setCoverOpen(!isCoverOpen);
   });
 
@@ -963,9 +1140,23 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
   });
 
   const toggleBase = () => {
+    if (suppressBaseClick) {
+      suppressBaseClick = false;
+      return;
+    }
     if (!isCoverOpen) {
       cover.classList.add('swipe-hint');
       setTimeout(() => cover.classList.remove('swipe-hint'), 400);
+      return;
+    }
+
+    if (isMomentary) {
+      // Stateless: fire once, flash, keep nothing.
+      dispatchDeckAction(slot.action, {});
+      base.classList.add('pressed');
+      setTimeout(() => base.classList.remove('pressed'), 180);
+      if (appSettings.soundEffects) playButtonSound();
+      if (appSettings.hapticFeedback) triggerHaptic(20);
       return;
     }
 
@@ -975,15 +1166,13 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
     if (newState) {
       lever.classList.add('active');
       statusLed.classList.add('active');
-      statusText.textContent = 'ARMED / ON';
     } else {
       lever.classList.remove('active');
       statusLed.classList.remove('active');
-      statusText.textContent = 'OFF';
     }
     base.setAttribute('aria-checked', String(newState));
 
-    saveDeckSlotStates(deckId, currentSlotStates);
+    persistSlotStates(deckId);
     dispatchDeckAction(slot.action, {
       enabled: newState,
       protectedCover: true,
@@ -998,6 +1187,9 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
   base.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
     e.preventDefault();
+    // Click suppression belongs to one pointer gesture; a keyboard
+    // activation is a different operation and is never suppressed.
+    suppressBaseClick = false;
     toggleBase();
   });
 }
@@ -1007,6 +1199,51 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
  * Pads are momentary action triggers: they flash while pressed and never
  * hold a persistent "on" state.
  */
+// Single-colour SVG symbols for pads and toggles. Emoji render small
+// and cheap at pad sizes; these draw crisply at any size in currentColor.
+const PAD_ICON_PATHS = {
+  playPause:
+    '<path d="M5 5.4v13.2c0 .8.9 1.3 1.6.9l9.2-6.6c.6-.4.6-1.4 0-1.8L6.6 4.5C5.9 4.1 5 4.6 5 5.4Z"/><rect x="17.6" y="5" width="2.3" height="14" rx="0.7"/><rect x="20.7" y="5" width="2.3" height="14" rx="0.7"/>',
+  seekBack: '<path d="M11.2 5 3.8 12l7.4 7V5Z"/><path d="M20.2 5 12.8 12l7.4 7V5Z"/>',
+  seekFwd: '<path d="m12.8 5 7.4 7-7.4 7V5Z"/><path d="m3.8 5 7.4 7-7.4 7V5Z"/>',
+  prev: '<rect x="4" y="5" width="2.4" height="14" rx="0.7"/><path d="M20 5.4v13.2c0 .8-.9 1.3-1.6.9L9.2 12.9a1.15 1.15 0 0 1 0-1.8l9.2-6.6c.7-.4 1.6.1 1.6.9Z"/>',
+  next: '<rect x="17.6" y="5" width="2.4" height="14" rx="0.7"/><path d="M4 5.4v13.2c0 .8.9 1.3 1.6.9l9.2-6.6a1.15 1.15 0 0 0 0-1.8L5.6 4.5C4.9 4.1 4 4.6 4 5.4Z"/>',
+  pip: '<rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="12.4" y="11.4" width="6.2" height="4.8" rx="1"/>',
+  fullscreen:
+    '<path d="M4 9.2V6a2 2 0 0 1 2-2h3.2M20 9.2V6a2 2 0 0 0-2-2h-3.2M4 14.8V18a2 2 0 0 0 2 2h3.2M20 14.8V18a2 2 0 0 1-2 2h-3.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
+  volumeOn:
+    '<path d="M4 9.6v4.8h3.4L12 18.5V5.5L7.4 9.6H4Z"/><path d="M15.4 9.4a3.8 3.8 0 0 1 0 5.2M18 7a7.6 7.6 0 0 1 0 10" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>',
+  volumeOff:
+    '<path d="M4 9.6v4.8h3.4L12 18.5V5.5L7.4 9.6H4Z"/><path d="m16 9.8 5.2 5.2M21.2 9.8 16 15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>',
+  plus: '<path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/>',
+  close:
+    '<path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4L12 13.4 6.4 19 5 17.6 10.6 12 5 6.4z"/>',
+  triLeft: '<path d="M16 5v14L7 12z"/>',
+  triRight: '<path d="M8 5v14l9-7z"/>',
+  mic: '<path d="M12 14.5a2.75 2.75 0 0 0 2.75-2.75v-5.5a2.75 2.75 0 1 0-5.5 0v5.5A2.75 2.75 0 0 0 12 14.5Z"/><path d="M17.5 11.25a5.5 5.5 0 0 1-11 0M12 16.75V20M9 20h6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>',
+  triUp: '<path d="M12 6.5 19 17H5z"/>',
+  triDown: '<path d="m12 17.5-7-11h14z"/>',
+  dblUp:
+    '<path d="m6 14.5 6-6 6 6M6 19.5l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>',
+  dblDown:
+    '<path d="m6 4.5 6 6 6-6M6 9.5l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>',
+  camera:
+    '<path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h8A1.5 1.5 0 0 1 15 8.5v7A1.5 1.5 0 0 1 13.5 17h-8A1.5 1.5 0 0 1 4 15.5z"/><path d="m15 10.5 5-2.6v8.2l-5-2.6z"/>',
+  book: '<path d="M6.5 3H19a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1H6.5A2.5 2.5 0 0 1 4 17.5v-12A2.5 2.5 0 0 1 6.5 3Z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M20 15H6.5A2.5 2.5 0 0 0 4 17.5" fill="none" stroke="currentColor" stroke-width="1.9"/>',
+};
+
+function createPadIcon(name) {
+  if (typeof document.createElementNS !== 'function' || !PAD_ICON_PATHS[name]) {
+    return null;
+  }
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('class', 'pad-icon-svg');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.innerHTML = PAD_ICON_PATHS[name];
+  return svg;
+}
+
 function renderMultiPadWidget(cardContainer, slot, _deckId) {
   const is4x4 = slot.type === 'pad4x4';
   // When a slot declares its own pad list, render exactly those pads
@@ -1035,13 +1272,18 @@ function renderMultiPadWidget(cardContainer, slot, _deckId) {
 
     const iconSpan = document.createElement('span');
     iconSpan.className = 'pad-icon';
-    iconSpan.textContent = padDef.icon || '';
+    const svgIcon = padDef.iconSvg ? createPadIcon(padDef.iconSvg) : null;
+    if (svgIcon) {
+      iconSpan.appendChild(svgIcon);
+    } else {
+      iconSpan.textContent = padDef.icon || '';
+    }
 
     const labelSpan = document.createElement('span');
     labelSpan.className = 'pad-label';
     labelSpan.textContent = padDef.label || '';
 
-    if (padDef.icon) padBtn.appendChild(iconSpan);
+    if (padDef.icon || padDef.iconSvg) padBtn.appendChild(iconSpan);
     if (padDef.label && !is4x4) padBtn.appendChild(labelSpan);
 
     const onPadDown = () => {
@@ -1109,7 +1351,7 @@ function renderSwitchWidget(cardContainer, slot, deckId) {
       statusLabel.textContent = 'OFF';
     }
 
-    saveDeckSlotStates(deckId, currentSlotStates);
+    persistSlotStates(deckId);
     dispatchDeckAction(slot.action, { enabled: newState });
 
     if (appSettings.soundEffects) playSwitchSound(newState);
@@ -1126,7 +1368,12 @@ function renderButtonWidget(cardContainer, slot, _deckId) {
 
   const iconSpan = document.createElement('span');
   iconSpan.className = 'btn-icon';
-  iconSpan.textContent = slot.icon || '🔘';
+  const btnSvgIcon = slot.iconSvg ? createPadIcon(slot.iconSvg) : null;
+  if (btnSvgIcon) {
+    iconSpan.appendChild(btnSvgIcon);
+  } else {
+    iconSpan.textContent = slot.icon || '🔘';
+  }
 
   const textSpan = document.createElement('span');
   textSpan.className = 'btn-text';
@@ -1144,13 +1391,44 @@ function renderButtonWidget(cardContainer, slot, _deckId) {
   });
 }
 
+let panelWindowId = null;
+// Settles when the window lookup finishes; null once it has, so the
+// common path stays a plain synchronous send.
+let panelWindowIdLookup = null;
+if (typeof chrome !== 'undefined' && chrome.windows && chrome.windows.getCurrent) {
+  panelWindowIdLookup = chrome.windows
+    .getCurrent()
+    .then((w) => {
+      panelWindowId = w && typeof w.id === 'number' ? w.id : null;
+    })
+    .catch(() => {
+      panelWindowId = null;
+    });
+  panelWindowIdLookup.then(() => {
+    panelWindowIdLookup = null;
+  });
+}
+
 function dispatchDeckAction(action, payload) {
   if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-    chrome.runtime.sendMessage({ action, payload }, (_response) => {
-      if (chrome.runtime.lastError) {
-        // Quietly absorb errors if background worker is sleeping
-      }
-    });
+    const send = () => {
+      const message = { action, payload };
+      if (panelWindowId !== null) message.windowId = panelWindowId;
+      chrome.runtime.sendMessage(message, (_response) => {
+        if (chrome.runtime.lastError) {
+          // Quietly absorb errors if background worker is sleeping
+        }
+      });
+    };
+    // Hold the message until the window lookup settles: a Close sent
+    // without a window id makes the worker close the last focused
+    // window's tab instead of this panel's. A failed lookup clears
+    // the hold at once and the message goes out as before.
+    if (panelWindowIdLookup) {
+      panelWindowIdLookup.then(send);
+    } else {
+      send();
+    }
   } else {
     console.log('[DeskDeck Sim Action]', action, payload);
   }
