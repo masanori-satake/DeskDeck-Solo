@@ -910,6 +910,24 @@ html {
   box-shadow: 0 0 12px var(--danger-glow);
 }
 
+/* Momentary variant: the base is one large symbol button that fills
+   most of the housing, not a small lever parked at one side. */
+.flip-switch-base.flip-base-action {
+  width: 84px;
+  height: 54px;
+  justify-content: center;
+  padding: 0;
+}
+
+.flip-base-action .pad-icon-svg {
+  width: 34px;
+  height: 34px;
+}
+
+.flip-base-action.pressed {
+  filter: brightness(1.5);
+}
+
 .flip-switch-led {
   width: 8px;
   height: 8px;

@@ -156,7 +156,13 @@ function buildSlotCard(slot, deckId) {
   // Pad grids carry no card title: area names like "Transport Pad Grid"
   // tell the user nothing, and each page now has its own category title.
   // The pads themselves are labelled.
-  if (slot.type !== 'knob' && slot.type !== 'pad2x2' && slot.type !== 'pad4x4') {
+  if (
+    slot.type !== 'knob' &&
+    slot.type !== 'pad2x2' &&
+    slot.type !== 'pad4x4' &&
+    slot.type !== 'button' &&
+    !slot.hideLabel
+  ) {
     const label = document.createElement('div');
     label.className = 'slot-label';
     label.textContent = slot.label;
@@ -895,23 +901,35 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
   coverLabel.textContent = 'SWIPE ◀';
   cover.appendChild(coverLabel);
 
-  // Switch base & lever inside
+  // Switch base & lever inside. A momentary slot (Camera Guard) holds
+  // no state — the extension cannot know the real camera state — so
+  // its base is a single large symbol button that only fires.
+  const isMomentary = !!slot.momentary;
   const base = document.createElement('div');
   base.className = 'flip-switch-base';
-  base.setAttribute('role', 'switch');
   base.setAttribute('tabindex', '0');
   base.setAttribute('aria-label', slot.label);
 
-  const isSwitchedOn = !!currentSlotStates[slot.id];
-  base.setAttribute('aria-checked', String(isSwitchedOn));
-  const lever = document.createElement('div');
-  lever.className = `flip-switch-lever ${isSwitchedOn ? 'active' : ''}`;
+  const isSwitchedOn = !isMomentary && !!currentSlotStates[slot.id];
+  let lever = null;
+  let statusLed = null;
+  if (isMomentary) {
+    base.classList.add('flip-base-action');
+    base.setAttribute('role', 'button');
+    const icon = createPadIcon(slot.iconSvg || 'camera');
+    if (icon) base.appendChild(icon);
+  } else {
+    base.setAttribute('role', 'switch');
+    base.setAttribute('aria-checked', String(isSwitchedOn));
+    lever = document.createElement('div');
+    lever.className = `flip-switch-lever ${isSwitchedOn ? 'active' : ''}`;
 
-  const statusLed = document.createElement('div');
-  statusLed.className = `flip-switch-led ${isSwitchedOn ? 'active' : ''}`;
+    statusLed = document.createElement('div');
+    statusLed.className = `flip-switch-led ${isSwitchedOn ? 'active' : ''}`;
 
-  base.appendChild(lever);
-  base.appendChild(statusLed);
+    base.appendChild(lever);
+    base.appendChild(statusLed);
+  }
 
   housing.appendChild(base);
   housing.appendChild(cover);
@@ -947,7 +965,7 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
   };
 
   const onHousingPointerMove = (e) => {
-    if (!isCoverDragging) return;
+    if (!isCoverDragging || didCoverDrag) return;
     const deltaX = e.clientX - dragStartX;
 
     if (deltaX < -15 && !isCoverOpen) {
@@ -999,6 +1017,16 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
     if (!isCoverOpen) {
       cover.classList.add('swipe-hint');
       setTimeout(() => cover.classList.remove('swipe-hint'), 400);
+      return;
+    }
+
+    if (isMomentary) {
+      // Stateless: fire once, flash, keep nothing.
+      dispatchDeckAction(slot.action, {});
+      base.classList.add('pressed');
+      setTimeout(() => base.classList.remove('pressed'), 180);
+      if (appSettings.soundEffects) playButtonSound();
+      if (appSettings.hapticFeedback) triggerHaptic(20);
       return;
     }
 
@@ -1066,6 +1094,8 @@ const PAD_ICON_PATHS = {
     '<path d="m6 14.5 6-6 6 6M6 19.5l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>',
   dblDown:
     '<path d="m6 4.5 6 6 6-6M6 9.5l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>',
+  camera:
+    '<path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h8A1.5 1.5 0 0 1 15 8.5v7A1.5 1.5 0 0 1 13.5 17h-8A1.5 1.5 0 0 1 4 15.5z"/><path d="m15 10.5 5-2.6v8.2l-5-2.6z"/>',
   book: '<path d="M6.5 3H19a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1H6.5A2.5 2.5 0 0 1 4 17.5v-12A2.5 2.5 0 0 1 6.5 3Z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M20 15H6.5A2.5 2.5 0 0 0 4 17.5" fill="none" stroke="currentColor" stroke-width="1.9"/>',
 };
 

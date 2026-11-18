@@ -138,6 +138,9 @@ export const DECK_PRESETS = {
         label: 'Camera Guard',
         defaultValue: false,
         action: 'toggle_camera',
+        momentary: true,
+        iconSvg: 'camera',
+        hideLabel: true,
         dense: true,
       },
       {
