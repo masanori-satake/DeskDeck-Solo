@@ -274,12 +274,23 @@
     // even though the fallback then worked. The API stays as the
     // fallback for layouts without the button, and its (expected)
     // rejection is only debug-logged.
+    // The listener goes on before the attempt: on the API path the
+    // event can fire before the awaited request resolves, and a named
+    // listener can be removed when the check window closes (a
+    // once-only listener would linger after every failure).
+    let entered = false;
+    const onEnter = () => {
+      entered = true;
+    };
+    if (video) video.addEventListener('enterpictureinpicture', onEnter);
+
     const pipBtn = document.querySelector('.ytp-pip-button');
     if (pipBtn) {
       tapElement(pipBtn);
     } else if (video && document.pictureInPictureEnabled) {
       try {
         await video.requestPictureInPicture();
+        entered = true;
       } catch (err) {
         console.debug('YouTube video.requestPictureInPicture failed:', err);
       }
@@ -288,17 +299,8 @@
     // Verify instead of guessing: if PiP did not engage, say so on the
     // video itself rather than failing silently. Opening and closing
     // again within the window still counts as success.
-    let entered = false;
-    if (video) {
-      video.addEventListener(
-        'enterpictureinpicture',
-        () => {
-          entered = true;
-        },
-        { once: true }
-      );
-    }
     setTimeout(() => {
+      if (video) video.removeEventListener('enterpictureinpicture', onEnter);
       if (!entered && !document.pictureInPictureElement) {
         showInfoToast(video, 'PiPにできませんでした。動画タッチ直後に押してください');
       }

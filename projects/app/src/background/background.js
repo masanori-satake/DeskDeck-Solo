@@ -34,7 +34,7 @@ getKeepAwakeStatus().then((isActive) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || !message.action) return false;
 
-  handleDeckAction(message)
+  handleDeckAction(message, sender)
     .then((result) => sendResponse({ success: true, result }))
     .catch((error) => sendResponse({ success: false, error: error.message }));
 
@@ -44,10 +44,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 /**
  * Handle incoming deck hardware actions
  */
-async function handleDeckAction(message) {
+async function handleDeckAction(message, sender) {
   const { action, payload } = message;
 
-  const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  // Pin the window at input time: in a service worker, currentWindow
+  // resolves to the last focused window, which may have changed by
+  // the time a queued operation actually runs.
+  const senderWindowId = sender && sender.tab ? sender.tab.windowId : undefined;
+  const activeQuery =
+    senderWindowId !== undefined
+      ? { active: true, windowId: senderWindowId }
+      : { active: true, currentWindow: true };
+
+  const [activeTab] = await chrome.tabs.query(activeQuery);
 
   switch (action) {
     // System control actions
@@ -146,14 +155,11 @@ async function handleDeckAction(message) {
         return { created: true };
       }
       if (padId === 'close') {
-        if (activeTab && activeTab.id) {
-          await chrome.tabs.remove(activeTab.id);
-          return { closed: true };
-        }
-        break;
+        await queueTabOperation(() => closeActiveTab(senderWindowId));
+        return { closed: true };
       }
       if (padId === 'prev' || padId === 'next') {
-        await queueCycleTab(padId === 'next' ? 1 : -1);
+        await queueCycleTab(padId === 'next' ? 1 : -1, senderWindowId);
         return { cycled: true };
       }
       break;
@@ -165,15 +171,12 @@ async function handleDeckAction(message) {
       return { created: true };
 
     case 'close_tab':
-      if (activeTab && activeTab.id) {
-        await chrome.tabs.remove(activeTab.id);
-        return { closed: true };
-      }
-      break;
+      await queueTabOperation(() => closeActiveTab(senderWindowId));
+      return { closed: true };
 
     case 'prev_tab':
     case 'next_tab':
-      await queueCycleTab(action === 'next_tab' ? 1 : -1);
+      await queueCycleTab(action === 'next_tab' ? 1 : -1, senderWindowId);
       return { cycled: true };
 
     case 'bookmark_page':
@@ -231,21 +234,33 @@ async function sendToTab(tabId, msg) {
   }
 }
 
-// Tab cycling is serialized: two rapid Next presses must each move
-// one tab. Without the chain, both could read the same active tab
-// before either update lands and collapse into a single move.
-let tabCycleChain = Promise.resolve();
-function queueCycleTab(direction) {
-  const run = tabCycleChain.then(() => cycleTab(direction));
-  tabCycleChain = run.catch(() => {});
+// Tab operations that depend on which tab is active are serialized
+// on one chain: two rapid Next presses must each move one tab, and a
+// Close that follows a Next must close the tab the Next landed on —
+// both resolve the active tab when they run, not when they arrive.
+let tabOpChain = Promise.resolve();
+function queueTabOperation(operation) {
+  const run = tabOpChain.then(operation);
+  tabOpChain = run.catch(() => {});
   return run;
+}
+function queueCycleTab(direction, windowId) {
+  return queueTabOperation(() => cycleTab(direction, windowId));
+}
+async function closeActiveTab(windowId) {
+  const [tab] = await chrome.tabs.query(
+    windowId !== undefined ? { active: true, windowId } : { active: true, currentWindow: true }
+  );
+  if (tab && tab.id) await chrome.tabs.remove(tab.id);
 }
 
 /**
  * Cycle active tab left (-1) or right (+1)
  */
-async function cycleTab(direction) {
-  const tabs = await chrome.tabs.query({ currentWindow: true });
+async function cycleTab(direction, windowId) {
+  const tabs = await chrome.tabs.query(
+    windowId !== undefined ? { windowId } : { currentWindow: true }
+  );
   if (tabs.length <= 1) return;
 
   const activeIndex = tabs.findIndex((t) => t.active);

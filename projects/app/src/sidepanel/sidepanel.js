@@ -272,9 +272,14 @@ function renderDeckSlots(deckId) {
   container.addEventListener(
     'touchstart',
     (e) => {
-      touchStartY = e.touches[0].clientY;
-      touchStartX = e.touches[0].clientX;
-      touchStartId = e.touches[0].identifier;
+      // Track one finger only: a second finger's touchstart must not
+      // overwrite the first finger's start point, and the id, the
+      // coordinates and the target all come from that same Touch.
+      if (touchStartId !== null) return;
+      const t = e.changedTouches[0];
+      touchStartY = t.clientY;
+      touchStartX = t.clientX;
+      touchStartId = t.identifier;
       // A gesture that starts on a flip-switch cover belongs to the
       // cover, even if it drifts vertically.
       touchStartOnCover = !!(
@@ -295,7 +300,10 @@ function renderDeckSlots(deckId) {
       for (const t of e.changedTouches) {
         if (t.identifier === touchStartId) endTouch = t;
       }
-      if (endTouch && !touchStartOnCover) {
+      // A different finger lifting first leaves the tracked gesture
+      // alive; only the tracked finger's end settles it.
+      if (!endTouch) return;
+      if (!touchStartOnCover) {
         const deltaY = touchStartY - endTouch.clientY;
         const deltaX = touchStartX - endTouch.clientX;
         // Predominantly vertical only: a horizontal knob drag that
@@ -401,8 +409,11 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
     cardContainer.appendChild(muteBtn);
   }
 
-  let val =
-    currentSlotStates[slot.id] !== undefined ? currentSlotStates[slot.id] : slot.defaultValue;
+  let val = slot.endless
+    ? slot.defaultValue
+    : currentSlotStates[slot.id] !== undefined
+      ? currentSlotStates[slot.id]
+      : slot.defaultValue;
 
   if (muteBtn) {
     let muted = currentSlotStates[`${slot.id}_mute`] === true;
@@ -460,7 +471,7 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
     currentSlotStates[slot.id] = val;
     lastTickBucket = Math.floor(val / tickStep);
     updateWheelUI(val);
-    saveDeckSlotStates(deckId, currentSlotStates);
+    // The resting position carries no meaning and is not persisted.
   };
 
   const applyValue = (newVal) => {
@@ -469,7 +480,7 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
     val = newVal;
     currentSlotStates[slot.id] = val;
     updateWheelUI(val);
-    saveDeckSlotStates(deckId, currentSlotStates);
+    if (!slot.endless) saveDeckSlotStates(deckId, currentSlotStates);
     const payload = { value: val };
     if (slot.endless) {
       payload.delta = newVal - dispatchBase;
@@ -1022,7 +1033,15 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
   };
 
   const onHousingPointerMove = (e) => {
-    if (!isCoverDragging || didCoverDrag) return;
+    if (!isCoverDragging) return;
+    if (e.buttons === 0) {
+      // The press ended outside the housing before capture started;
+      // drop the stale drag instead of acting on a later hover.
+      isCoverDragging = false;
+      didCoverDrag = false;
+      return;
+    }
+    if (didCoverDrag) return;
     const deltaX = e.clientX - dragStartX;
 
     if (!housingCaptured && Math.abs(deltaX) > 6) {

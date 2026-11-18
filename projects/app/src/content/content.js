@@ -468,8 +468,21 @@ function showInfoToast(video, text) {
  * failures. Only report when fullscreen really did not engage.
  */
 function verifyFullscreenSoon(video) {
+  // Entering and leaving again within the window still counts as
+  // success, so record entry via the event, not the end state.
+  let entered = false;
+  const onFsChange = () => {
+    if (document.fullscreenElement) entered = true;
+  };
+  document.addEventListener('fullscreenchange', onFsChange);
   setTimeout(() => {
-    if (!document.fullscreenElement) {
+    document.removeEventListener('fullscreenchange', onFsChange);
+    if (entered || document.fullscreenElement) return;
+    if (!document.fullscreenEnabled) {
+      // Forbidden by the page's policy; touching the video cannot
+      // change that, so do not suggest it.
+      showInfoToast(video, 'このページでは全画面にできません');
+    } else {
       showInfoToast(video, '全画面にできませんでした。動画タッチ直後に押してください');
     }
   }, 900);
@@ -522,18 +535,30 @@ async function togglePictureInPicture() {
     // change that, so do not suggest it.
     return;
   }
+  // The listener goes on before the request: the event can fire
+  // before an awaited request resolves, and opening then closing
+  // within the window still counts as success.
+  let entered = false;
+  const onEnter = () => {
+    entered = true;
+  };
+  video.addEventListener('enterpictureinpicture', onEnter);
+  let requestErrorName = null;
   try {
     await video.requestPictureInPicture();
+    entered = true;
   } catch (err) {
     // Expected when the trigger came from the side panel (the page
     // has no user activation); not an error worth surfacing.
+    requestErrorName = err && err.name;
     console.debug('Request PiP failed:', err);
   }
-  // Verify instead of guessing from activation state (a successful
-  // request consumes the activation, which used to trigger the hint
-  // even when PiP had opened).
   setTimeout(() => {
-    if (!document.pictureInPictureElement) {
+    video.removeEventListener('enterpictureinpicture', onEnter);
+    if (entered || document.pictureInPictureElement) return;
+    if (requestErrorName === 'InvalidStateError' && video.readyState === 0) {
+      showInfoToast(video, '動画の読み込みが終わってから押してください');
+    } else {
       showInfoToast(video, 'PiPにできませんでした。動画タッチ直後に押してください');
     }
   }, 900);
