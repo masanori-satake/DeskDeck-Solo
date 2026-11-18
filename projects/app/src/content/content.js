@@ -117,14 +117,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       // the Scroll Speed factor. The first message after load only
       // syncs the baseline (the panel may hold a value from another
       // tab), it does not scroll.
-      if (payload && payload.value !== undefined) {
-        if (lastScrollDialValue === null) {
-          lastScrollDialValue = payload.value;
-        } else {
-          const deltaSteps = payload.value - lastScrollDialValue;
-          lastScrollDialValue = payload.value;
-          if (deltaSteps !== 0) {
-            window.scrollBy(0, deltaSteps * 4 * scrollSpeedFactor);
+      if (payload) {
+        // The panel's displayed Scroll Speed travels with the scroll
+        // message, so a freshly loaded tab scrolls at the shown rate
+        // instead of this script's default.
+        if (
+          typeof payload.speedFactor === 'number' &&
+          payload.speedFactor >= 1 &&
+          payload.speedFactor <= 10
+        ) {
+          scrollSpeedFactor = payload.speedFactor;
+        }
+        if (typeof payload.delta === 'number') {
+          // Relative movement from the endless wheel: works even at
+          // what used to be the knob's end stops.
+          if (payload.delta !== 0) {
+            window.scrollBy(0, payload.delta * 4 * scrollSpeedFactor);
+          }
+          lastScrollDialValue = null;
+        } else if (payload.value !== undefined) {
+          if (lastScrollDialValue === null) {
+            lastScrollDialValue = payload.value;
+          } else {
+            const deltaSteps = payload.value - lastScrollDialValue;
+            lastScrollDialValue = payload.value;
+            if (deltaSteps !== 0) {
+              window.scrollBy(0, deltaSteps * 4 * scrollSpeedFactor);
+            }
           }
         }
       }
@@ -176,7 +195,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } else {
           document.exitFullscreen().catch(() => {});
         }
-        if (!wasFullscreen) hintActivationIfNeeded(getPrimaryVideoElement());
+        if (!wasFullscreen) verifyFullscreenSoon(getPrimaryVideoElement());
       }
       // 'prev_video'/'next_video' intentionally do nothing on generic
       // pages: there is no playlist to move through. Site-specific
@@ -203,7 +222,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       } else {
         document.exitFullscreen().catch(() => {});
       }
-      if (!wasFullscreen) hintActivationIfNeeded(getPrimaryVideoElement());
+      if (!wasFullscreen) verifyFullscreenSoon(getPrimaryVideoElement());
       sendResponse({ handled: true });
       break;
     }
@@ -442,15 +461,18 @@ function showInfoToast(video, text) {
 }
 
 /**
- * Fullscreen and PiP require a recent real touch inside the page
- * (transient activation); a side-panel click does not count. When no
- * activation is present the request will have been rejected, so say
- * what to do instead of failing silently.
+ * Fullscreen requires a recent real touch inside the page (transient
+ * activation); a side-panel click does not count. Verify the outcome
+ * instead of reading activation state: a successful request consumes
+ * the activation, so checking it afterwards flags successes as
+ * failures. Only report when fullscreen really did not engage.
  */
-function hintActivationIfNeeded(video) {
-  if (navigator.userActivation && !navigator.userActivation.isActive) {
-    showInfoToast(video, '先に動画をタッチしてから押してください');
-  }
+function verifyFullscreenSoon(video) {
+  setTimeout(() => {
+    if (!document.fullscreenElement) {
+      showInfoToast(video, '全画面にできませんでした。動画タッチ直後に押してください');
+    }
+  }, 900);
 }
 
 function seekVideo(seconds, isRelative = true) {
@@ -495,16 +517,26 @@ async function togglePictureInPicture() {
   }
 
   const video = getPrimaryVideoElement();
-  if (video && document.pictureInPictureEnabled) {
-    try {
-      await video.requestPictureInPicture();
-    } catch (err) {
-      // Expected when the trigger came from the side panel (the page
-      // has no user activation); not an error worth surfacing.
-      console.debug('Request PiP failed:', err);
-    }
+  if (!video || !document.pictureInPictureEnabled) {
+    // PiP is unavailable on this page; touching the video cannot
+    // change that, so do not suggest it.
+    return;
   }
-  hintActivationIfNeeded(video);
+  try {
+    await video.requestPictureInPicture();
+  } catch (err) {
+    // Expected when the trigger came from the side panel (the page
+    // has no user activation); not an error worth surfacing.
+    console.debug('Request PiP failed:', err);
+  }
+  // Verify instead of guessing from activation state (a successful
+  // request consumes the activation, which used to trigger the hint
+  // even when PiP had opened).
+  setTimeout(() => {
+    if (!document.pictureInPictureElement) {
+      showInfoToast(video, 'PiPにできませんでした。動画タッチ直後に押してください');
+    }
+  }, 900);
 }
 
 function setMicLevel(valPercent) {

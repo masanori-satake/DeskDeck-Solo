@@ -335,6 +335,7 @@ export const DECK_PRESETS = {
         step: 2,
         unit: '',
         action: 'scroll_dial',
+        endless: true,
         dense: true,
       },
       {

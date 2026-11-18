@@ -211,19 +211,6 @@
   }
 
   /**
-   * Fullscreen and PiP require a recent real touch inside the page
-   * (transient activation); a click in the side panel does not count,
-   * and even clicking the player's own button from a script cannot
-   * substitute. When no activation is present the request will have
-   * been rejected, so say what to do instead of failing silently.
-   */
-  function hintActivationIfNeeded(video) {
-    if (navigator.userActivation && !navigator.userActivation.isActive) {
-      showInfoToast(video, '先に動画をタッチしてから押してください');
-    }
-  }
-
-  /**
    * Tap an element the way a finger would: the full pointer/mouse
    * sequence, not a bare click(). Some player controls arm their
    * handlers on pointerdown and ignore a synthetic click alone.
@@ -299,9 +286,20 @@
     }
 
     // Verify instead of guessing: if PiP did not engage, say so on the
-    // video itself rather than failing silently.
+    // video itself rather than failing silently. Opening and closing
+    // again within the window still counts as success.
+    let entered = false;
+    if (video) {
+      video.addEventListener(
+        'enterpictureinpicture',
+        () => {
+          entered = true;
+        },
+        { once: true }
+      );
+    }
     setTimeout(() => {
-      if (!document.pictureInPictureElement) {
+      if (!entered && !document.pictureInPictureElement) {
         showInfoToast(video, 'PiPにできませんでした。動画タッチ直後に押してください');
       }
     }, 900);
@@ -486,10 +484,17 @@
           }
           if (!wasFullscreen) {
             // Verify instead of guessing: if fullscreen did not engage,
-            // tell the user on the video itself.
+            // tell the user on the video itself. Entering and leaving
+            // again within the window still counts as success.
             const video = getYouTubeVideo();
+            let entered = false;
+            const onFsChange = () => {
+              if (document.fullscreenElement) entered = true;
+            };
+            document.addEventListener('fullscreenchange', onFsChange);
             setTimeout(() => {
-              if (!document.fullscreenElement) {
+              document.removeEventListener('fullscreenchange', onFsChange);
+              if (!entered && !document.fullscreenElement) {
                 showInfoToast(video, '全画面にできませんでした。動画タッチ直後に押してください');
               }
             }, 900);

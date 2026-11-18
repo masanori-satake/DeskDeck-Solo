@@ -153,7 +153,7 @@ async function handleDeckAction(message) {
         break;
       }
       if (padId === 'prev' || padId === 'next') {
-        await cycleTab(padId === 'next' ? 1 : -1);
+        await queueCycleTab(padId === 'next' ? 1 : -1);
         return { cycled: true };
       }
       break;
@@ -173,7 +173,7 @@ async function handleDeckAction(message) {
 
     case 'prev_tab':
     case 'next_tab':
-      await cycleTab(action === 'next_tab' ? 1 : -1);
+      await queueCycleTab(action === 'next_tab' ? 1 : -1);
       return { cycled: true };
 
     case 'bookmark_page':
@@ -229,6 +229,16 @@ async function sendToTab(tabId, msg) {
       return { status: 'no_content_script', message: retryErr.message };
     }
   }
+}
+
+// Tab cycling is serialized: two rapid Next presses must each move
+// one tab. Without the chain, both could read the same active tab
+// before either update lands and collapse into a single move.
+let tabCycleChain = Promise.resolve();
+function queueCycleTab(direction) {
+  const run = tabCycleChain.then(() => cycleTab(direction));
+  tabCycleChain = run.catch(() => {});
+  return run;
 }
 
 /**

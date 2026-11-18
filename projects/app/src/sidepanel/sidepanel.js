@@ -186,9 +186,17 @@ function buildSlotCard(slot, deckId) {
   return card;
 }
 
+let pagerAbortController = null;
+
 function renderDeckSlots(deckId) {
   const container = document.getElementById('slotsContainer');
   if (!container || !currentDeckPreset) return;
+
+  // The pager listeners below live on the persistent container, not on
+  // the re-rendered children: without this, every deck switch stacks
+  // another set that keeps acting on detached tracks.
+  if (pagerAbortController) pagerAbortController.abort();
+  pagerAbortController = new AbortController();
 
   container.innerHTML = '';
   container.classList.remove('pager-viewport');
@@ -259,30 +267,50 @@ function renderDeckSlots(deckId) {
   // pages move the way the finger pushes them.
   let touchStartY = null;
   let touchStartX = null;
+  let touchStartId = null;
+  let touchStartOnCover = false;
   container.addEventListener(
     'touchstart',
     (e) => {
       touchStartY = e.touches[0].clientY;
       touchStartX = e.touches[0].clientX;
+      touchStartId = e.touches[0].identifier;
+      // A gesture that starts on a flip-switch cover belongs to the
+      // cover, even if it drifts vertically.
+      touchStartOnCover = !!(
+        e.target &&
+        e.target.closest &&
+        e.target.closest('.flip-switch-housing')
+      );
     },
-    { passive: true }
+    { passive: true, signal: pagerAbortController.signal }
   );
   container.addEventListener(
     'touchend',
     (e) => {
       if (touchStartY === null) return;
-      const deltaY = touchStartY - e.changedTouches[0].clientY;
-      const deltaX = touchStartX - e.changedTouches[0].clientX;
-      // Predominantly vertical only: a horizontal knob drag that
-      // drifts a little vertically must not flip the page.
-      if (Math.abs(deltaY) > 50 && Math.abs(deltaY) > Math.abs(deltaX) * 1.5) {
-        if (deltaY > 0) goToPage(currentPage + 1);
-        else goToPage(currentPage - 1);
+      // Compare the same finger that started the gesture; another
+      // finger lifting first must not move the page.
+      let endTouch = null;
+      for (const t of e.changedTouches) {
+        if (t.identifier === touchStartId) endTouch = t;
+      }
+      if (endTouch && !touchStartOnCover) {
+        const deltaY = touchStartY - endTouch.clientY;
+        const deltaX = touchStartX - endTouch.clientX;
+        // Predominantly vertical only: a horizontal knob drag that
+        // drifts a little vertically must not flip the page.
+        if (Math.abs(deltaY) > 50 && Math.abs(deltaY) > Math.abs(deltaX) * 1.5) {
+          if (deltaY > 0) goToPage(currentPage + 1);
+          else goToPage(currentPage - 1);
+        }
       }
       touchStartY = null;
       touchStartX = null;
+      touchStartId = null;
+      touchStartOnCover = false;
     },
-    { passive: true }
+    { passive: true, signal: pagerAbortController.signal }
   );
   let lastWheelNav = 0;
   container.addEventListener(
@@ -293,7 +321,7 @@ function renderDeckSlots(deckId) {
       lastWheelNav = now;
       goToPage(currentPage + (e.deltaY > 0 ? 1 : -1));
     },
-    { passive: true }
+    { passive: true, signal: pagerAbortController.signal }
   );
 }
 
@@ -420,6 +448,21 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
   const tickStep = Math.max(slot.step || 1, (slot.max - slot.min) / 20);
   let lastTickBucket = Math.floor(val / tickStep);
 
+  let dispatchBase = val;
+
+  const recenterWheel = () => {
+    // Endless wheels (Scroll Wheel) rest at the centre: the position
+    // carries no meaning, and resting at an end stop would kill
+    // further movement in that direction.
+    val = slot.defaultValue;
+    unroundedVal = val;
+    dispatchBase = val;
+    currentSlotStates[slot.id] = val;
+    lastTickBucket = Math.floor(val / tickStep);
+    updateWheelUI(val);
+    saveDeckSlotStates(deckId, currentSlotStates);
+  };
+
   const applyValue = (newVal) => {
     if (newVal === val) return;
 
@@ -427,7 +470,17 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
     currentSlotStates[slot.id] = val;
     updateWheelUI(val);
     saveDeckSlotStates(deckId, currentSlotStates);
-    dispatchDeckAction(slot.action, { value: val });
+    const payload = { value: val };
+    if (slot.endless) {
+      payload.delta = newVal - dispatchBase;
+      dispatchBase = newVal;
+    }
+    if (slot.action === 'scroll_dial' && typeof currentSlotStates.speed_fader === 'number') {
+      // The receiving tab may be freshly loaded and still hold the
+      // default factor; send the displayed one along.
+      payload.speedFactor = currentSlotStates.speed_fader;
+    }
+    dispatchDeckAction(slot.action, payload);
 
     const bucket = Math.floor(val / tickStep);
     if (bucket !== lastTickBucket) {
@@ -468,6 +521,7 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
   const onPointerUp = (e) => {
     if (isDragging) {
       isDragging = false;
+      if (slot.endless) recenterWheel();
       wheelControl.classList.remove('dragging');
       try {
         wheelControl.releasePointerCapture(e.pointerId);
@@ -491,6 +545,7 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
       const newVal = Math.max(slot.min, Math.min(slot.max, val + direction * step));
       unroundedVal = newVal;
       applyValue(newVal);
+      if (slot.endless) recenterWheel();
     },
     { passive: false }
   );
@@ -509,6 +564,7 @@ function renderContinuousWheelWidget(cardContainer, slot, deckId) {
     const newVal = Math.max(slot.min, Math.min(slot.max, val + direction * step));
     unroundedVal = newVal;
     applyValue(newVal);
+    if (slot.endless) recenterWheel();
   });
 }
 
@@ -953,20 +1009,30 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
     if (appSettings.hapticFeedback) triggerHaptic(isCoverOpen ? 12 : 8);
   };
 
+  let housingCaptured = false;
+
   const onHousingPointerDown = (e) => {
     isCoverDragging = true;
     didCoverDrag = false;
+    suppressBaseClick = false;
     dragStartX = e.clientX;
-    try {
-      housing.setPointerCapture(e.pointerId);
-    } catch {
-      // ignore
-    }
+    // No pointer capture yet: capturing on pointerdown retargets the
+    // following click to the housing, which would eat plain taps on
+    // the base. Capture starts once the gesture is really a drag.
   };
 
   const onHousingPointerMove = (e) => {
     if (!isCoverDragging || didCoverDrag) return;
     const deltaX = e.clientX - dragStartX;
+
+    if (!housingCaptured && Math.abs(deltaX) > 6) {
+      housingCaptured = true;
+      try {
+        housing.setPointerCapture(e.pointerId);
+      } catch {
+        // ignore
+      }
+    }
 
     if (deltaX < -15 && !isCoverOpen) {
       didCoverDrag = true;
@@ -981,10 +1047,13 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
     if (isCoverDragging) {
       isCoverDragging = false;
       if (didCoverDrag) suppressBaseClick = true;
-      try {
-        housing.releasePointerCapture(e.pointerId);
-      } catch {
-        // ignore
+      if (housingCaptured) {
+        housingCaptured = false;
+        try {
+          housing.releasePointerCapture(e.pointerId);
+        } catch {
+          // ignore
+        }
       }
     }
   };
@@ -1057,6 +1126,9 @@ function renderFlipSwitchWidget(cardContainer, slot, deckId) {
   base.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
     e.preventDefault();
+    // Click suppression belongs to one pointer gesture; a keyboard
+    // activation is a different operation and is never suppressed.
+    suppressBaseClick = false;
     toggleBase();
   });
 }

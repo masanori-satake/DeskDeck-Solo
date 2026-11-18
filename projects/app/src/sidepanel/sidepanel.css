@@ -203,6 +203,17 @@ html {
   min-height: 280px;
 }
 
+/* Inside a flick page there is no scrolling to fall back on, so the
+   fader gives up some height instead of pushing its lower end out of
+   reach on short panels. */
+.pager-page-grid .slot-card.slot-fader {
+  min-height: 208px;
+}
+
+.pager-page-grid .fader-track-wrapper {
+  height: 120px;
+}
+
 .slot-card.slot-pad2x2 {
   grid-column: span 2;
 }
@@ -917,6 +928,9 @@ html {
   height: 54px;
   justify-content: center;
   padding: 0;
+  /* The base background is a fixed dark gradient in both themes, so
+     the symbol needs a fixed light colour (same trap as the pads). */
+  color: #f8fafc;
 }
 
 .flip-base-action .pad-icon-svg {
