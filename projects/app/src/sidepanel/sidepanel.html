@@ -22,11 +22,32 @@
       </header>
 
       <!-- Main Active Deck Hardware Area -->
-      <main class="deck-workspace">
+      <main id="deckWorkspace" class="deck-workspace">
         <div id="slotsContainer" class="slots-grid">
           <!-- Hardware slots dynamically populated here -->
         </div>
       </main>
+
+      <!-- In-panel settings. The options page opens in a browser tab,
+           out of the right thumb's reach in tablet mode, so the same
+           settings also live inside the panel (real-device feedback,
+           2026-11-22). Toggles apply immediately. -->
+      <section id="settingsView" class="settings-view" hidden>
+        <div class="settings-head">
+          <button id="settingsBackBtn" class="icon-btn" aria-label="Back" title="Back">
+            <span class="material-symbols-outlined">arrow_back</span>
+          </button>
+          <h2 class="settings-title" data-i18n="optionsTitle">DeskDeck-Solo Settings</h2>
+        </div>
+        <div class="setting-item">
+          <label for="settingsSound" data-i18n="soundEffects">Sound Feedback</label>
+          <input type="checkbox" id="settingsSound" class="toggle-checkbox" />
+        </div>
+        <div class="setting-item">
+          <label for="settingsHaptic" data-i18n="hapticFeedback">Haptic Feedback</label>
+          <input type="checkbox" id="settingsHaptic" class="toggle-checkbox" />
+        </div>
+      </section>
 
       <!-- Deck Footer Status -->
       <footer class="deck-footer">

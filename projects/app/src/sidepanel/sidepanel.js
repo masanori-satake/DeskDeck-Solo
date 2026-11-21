@@ -4,6 +4,7 @@ import {
   getDeckSlotStates,
   saveDeckSlotStates,
   getSettings,
+  saveSettings,
   getSlotMappings,
 } from '../lib/storage.js';
 
@@ -47,15 +48,52 @@ function initI18n() {
 
 function setupOptionsButton() {
   const optionsBtn = document.getElementById('optionsBtn');
-  if (optionsBtn) {
-    optionsBtn.addEventListener('click', () => {
-      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.openOptionsPage) {
-        chrome.runtime.openOptionsPage();
-      } else {
-        window.open('../options/options.html', '_blank');
-      }
-    });
-  }
+  const settingsView = document.getElementById('settingsView');
+  const workspace = document.getElementById('deckWorkspace');
+  if (!optionsBtn || !settingsView || !workspace) return;
+
+  const soundInput = document.getElementById('settingsSound');
+  const hapticInput = document.getElementById('settingsHaptic');
+  const backBtn = document.getElementById('settingsBackBtn');
+
+  const openSettings = () => {
+    if (soundInput) soundInput.checked = !!appSettings.soundEffects;
+    if (hapticInput) hapticInput.checked = !!appSettings.hapticFeedback;
+    workspace.hidden = true;
+    settingsView.hidden = false;
+  };
+  const closeSettings = () => {
+    settingsView.hidden = true;
+    workspace.hidden = false;
+  };
+
+  // The settings live inside the panel: the options page opens in a
+  // browser tab, out of the right thumb's reach in tablet mode
+  // (real-device feedback, 2026-11-22). The gear toggles the view.
+  optionsBtn.addEventListener('click', () => {
+    if (settingsView.hidden) {
+      openSettings();
+    } else {
+      closeSettings();
+    }
+  });
+  if (backBtn) backBtn.addEventListener('click', closeSettings);
+
+  // Toggles apply (and save) immediately — no Save button to reach.
+  const applySetting = async () => {
+    appSettings = {
+      soundEffects: soundInput ? soundInput.checked : appSettings.soundEffects,
+      hapticFeedback: hapticInput ? hapticInput.checked : appSettings.hapticFeedback,
+    };
+    try {
+      await saveSettings(appSettings);
+    } catch {
+      // A failed save only means the change lasts for this panel
+      // session; the deck keeps working either way.
+    }
+  };
+  if (soundInput) soundInput.addEventListener('change', applySetting);
+  if (hapticInput) hapticInput.addEventListener('change', applySetting);
 }
 
 function setupDeckSelector() {
