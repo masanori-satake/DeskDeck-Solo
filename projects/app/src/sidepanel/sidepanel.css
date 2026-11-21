@@ -1156,3 +1156,79 @@ html {
   letter-spacing: 0.5px;
   color: var(--primary-light);
 }
+
+/* In-panel settings view (toggled from the header gear) */
+.settings-view {
+  flex: 1;
+  padding: 16px;
+  background-color: var(--panel-bg);
+  overflow-y: auto;
+}
+
+.settings-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.settings-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.settings-view .setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.settings-view .setting-item label {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.settings-view .toggle-checkbox {
+  width: 52px;
+  height: 32px;
+  flex: none;
+  appearance: none;
+  background-color: var(--card-border);
+  border-radius: 16px;
+  position: relative;
+  cursor: pointer;
+  outline: none;
+  transition: background-color 0.2s ease;
+}
+
+.settings-view .toggle-checkbox:checked {
+  background-color: var(--primary);
+}
+
+.settings-view .toggle-checkbox::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #fff;
+  transition: transform 0.2s ease;
+}
+
+.settings-view .toggle-checkbox:checked::before {
+  transform: translateX(20px);
+}
+
+/* The workspace sets display:flex, which would override the hidden
+   attribute's UA display:none — guard it explicitly. */
+.deck-workspace[hidden],
+.settings-view[hidden] {
+  display: none;
+}

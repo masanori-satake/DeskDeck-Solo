@@ -15,10 +15,36 @@
   }
 
   /**
+   * Shorts keeps several reel players in the DOM at once (previous /
+   * current / next), and a plain querySelector finds the first one,
+   * which is usually NOT the reel on screen — play/pause then acted
+   * on an invisible reel and looked dead (real-device report,
+   * 2026-11-22). Scope lookups to the active reel on Shorts pages.
+   * @returns {boolean}
+   */
+  function isShortsPage() {
+    return window.location.pathname.startsWith('/shorts/');
+  }
+
+  /**
+   * Get the renderer element of the Shorts reel currently on screen
+   * @returns {HTMLElement|null}
+   */
+  function getActiveShortsRenderer() {
+    if (!isShortsPage()) return null;
+    return document.querySelector('ytd-reel-video-renderer[is-active]');
+  }
+
+  /**
    * Get YouTube #movie_player DOM element (exposes YouTube JS API)
    * @returns {HTMLElement|null}
    */
   function getYouTubePlayer() {
+    const reel = getActiveShortsRenderer();
+    if (reel) {
+      const scoped = reel.querySelector('.html5-video-player');
+      if (scoped) return scoped;
+    }
     return document.getElementById('movie_player') || document.querySelector('.html5-video-player');
   }
 
@@ -27,6 +53,11 @@
    * @returns {HTMLVideoElement|null}
    */
   function getYouTubeVideo() {
+    const reel = getActiveShortsRenderer();
+    if (reel) {
+      const scoped = reel.querySelector('video');
+      if (scoped) return scoped;
+    }
     return (
       document.querySelector('video.html5-main-video') ||
       document.querySelector('.html5-video-container video') ||
@@ -439,11 +470,10 @@
         return true;
       }
 
-      case 'seek_dial':
-      case 'scroll_dial': {
-        // The endless Scroll Wheel sends its relative movement: a
-        // clamped absolute value would stall the seek at the end
-        // stops, the same reason the page-scroll side takes a delta.
+      case 'seek_dial': {
+        // The Jog Dial sends its relative movement: a clamped absolute
+        // value would stall the seek at the end stops, the same reason
+        // the page-scroll side takes a delta.
         const deltaSeconds =
           typeof payload.delta === 'number'
             ? payload.delta * 0.2
@@ -453,6 +483,15 @@
         }
         return true;
       }
+
+      case 'scroll_dial':
+        // Not handled here on purpose: the Scroll Wheel scrolls the
+        // page on every site, YouTube included (decided 2026-11-22
+        // after a real-device check — the wheel is how the user reads
+        // the comments below a portrait video, and seeking already
+        // lives on the Media deck's Jog Dial). Returning false lets
+        // the generic content handler page-scroll instead.
+        return false;
 
       case 'set_speed':
       case 'set_playback_rate':
