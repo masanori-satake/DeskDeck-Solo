@@ -19,6 +19,7 @@
    - バージョン不整合を検出するため `tests/version.test.js` を維持・実行してください。
 4. **テスト・品質検証要件**:
    - テストの実行は Node.js 組み込みテストランナーを使用します: `node --test tests/*.test.js`
+   - E2E チェック（実 Chromium に拡張を読み込んで操作する検証）は `tests/e2e/` に置きます: `npm run test:e2e`（ディスプレイの無い環境では `xvfb-run -a npm run test:e2e`）。実機でしか分からなかった不具合を直すときは、再現チェックをここへ先に足すこと。Playwright は devDependency のみで、配布物には含めません。
    - スタイルチェック・コード品質検証には ESLint および Prettier を使用します: `npm run lint`, `npm run format`
 5. **著作権表記・言語要件**:
    - プロジェクト全体の著作権表示は `Copyright (c) 2026 Masanori SATAKE` を使用してください。

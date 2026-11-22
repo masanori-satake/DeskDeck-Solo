@@ -1,0 +1,42 @@
+name: 'E2Eテスト (E2E Tests)'
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/app/**'
+      - 'tests/e2e/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/e2e.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'projects/app/**'
+      - 'tests/e2e/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/e2e.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: 'E2Eチェック実行 (Run E2E Checks)'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      # 拡張機能の読み込みにはヘッド付き Chromium が要るため、仮想ディスプレイで実行する。
+      - run: xvfb-run -a npm run test:e2e
