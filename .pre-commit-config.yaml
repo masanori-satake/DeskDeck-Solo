@@ -1,8 +1,8 @@
 ci:
-  autofix_commit_msg: "[pre-commit.ci] auto fixes from pre-commit.com hooks"
+  autofix_commit_msg: '[pre-commit.ci] auto fixes from pre-commit.com hooks'
   autofix_prs: true
   autoupdate_branch: 'main'
-  autoupdate_commit_msg: "[pre-commit.ci] pre-commit autoupdate"
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
   autoupdate_schedule: weekly
   submodules: false
 
@@ -22,4 +22,4 @@ repos:
     rev: v0.50.0
     hooks:
       - id: markdownlint
-        args: ["--config", ".markdownlint.json"]
+        args: ['--config', '.markdownlint.json']
