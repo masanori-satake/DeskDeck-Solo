@@ -1,11 +1,12 @@
 {
   "name": "deskdeck-solo",
-  "version": "0.3.13",
+  "version": "0.3.14",
   "description": "Chromebook tablet mode virtual hardware deck Chrome extension",
   "type": "module",
   "private": true,
   "scripts": {
     "test": "node --test tests/*.test.js",
+    "test:e2e": "node tests/e2e/run.mjs",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --check .",
     "check-version-bump": "node scripts/check-version-bump.js",
@@ -15,6 +16,7 @@
   "license": "MIT",
   "devDependencies": {
     "eslint": "^8.57.0",
+    "playwright": "^1.65.1",
     "prettier": "^3.2.5"
   }
 }

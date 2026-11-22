@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>Shorts fixture</title>
+  </head>
+  <body>
+    <div id="shorts-container">
+      <!-- Reel 0: first in DOM order, NOT active. The pre-0.3.13 code grabbed
+           this one because it took the first DOM element. -->
+      <ytd-reel-video-renderer id="reel-0">
+        <div class="html5-video-player"><video muted playsinline></video></div>
+      </ytd-reel-video-renderer>
+      <!-- Reel 1: the visible, active reel. Play/Pause must act here. -->
+      <ytd-reel-video-renderer id="reel-1" is-active>
+        <div class="html5-video-player"><video muted playsinline></video></div>
+      </ytd-reel-video-renderer>
+    </div>
+    <script>
+      document.querySelectorAll('video').forEach((v) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 180;
+        canvas.height = 320;
+        canvas.getContext('2d').fillRect(0, 0, 180, 320);
+        v.srcObject = canvas.captureStream(5);
+      });
+      // The inactive reel is "playing" (as YouTube keeps neighbours warm);
+      // the active reel starts paused so a Play/Pause toggle must start it.
+      document.querySelector('#reel-0 video').play();
+    </script>
+  </body>
+</html>
