@@ -45,10 +45,7 @@ test('only the generic content script runs on all urls', () => {
 });
 
 test('background re-injection list covers every declared content script', () => {
-  const background = readFileSync(
-    join(root, 'projects/app/src/background/background.js'),
-    'utf8'
-  );
+  const background = readFileSync(join(root, 'projects/app/src/background/background.js'), 'utf8');
   const declared = manifest.content_scripts.flatMap((entry) => entry.js);
   for (const file of declared) {
     assert.ok(
