@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "__MSG_appName__",
   "description": "__MSG_appDesc__",
-  "version": "0.3.16",
+  "version": "0.3.17",
   "default_locale": "ja",
   "permissions": ["sidePanel", "scripting", "storage", "tabs", "power", "bookmarks"],
   "host_permissions": ["<all_urls>"],
@@ -12,13 +12,20 @@
   },
   "content_scripts": [
     {
+      "matches": ["*://teams.microsoft.com/*", "*://teams.live.com/*"],
+      "js": ["src/content/teams.js"]
+    },
+    {
+      "matches": ["*://meet.google.com/*"],
+      "js": ["src/content/meet.js"]
+    },
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["src/content/youtube.js"]
+    },
+    {
       "matches": ["<all_urls>"],
-      "js": [
-        "src/content/teams.js",
-        "src/content/meet.js",
-        "src/content/youtube.js",
-        "src/content/content.js"
-      ]
+      "js": ["src/content/content.js"]
     }
   ],
   "side_panel": {
