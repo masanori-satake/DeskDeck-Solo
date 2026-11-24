@@ -141,7 +141,11 @@ async function handleDeckAction(message, sender) {
     // Reader & Zoom actions
     case 'set_zoom':
       if (activeTab && activeTab.id && chrome.tabs.setZoom) {
-        const zoomFactor = (payload.value || 100) / 100;
+        // Clamp to the range Chrome itself supports (25%–500%), so a
+        // malformed payload can never push an out-of-range value at
+        // the API. Panel-originated values are already inside it.
+        const rawZoom = ((payload && payload.value) || 100) / 100;
+        const zoomFactor = Math.min(5, Math.max(0.25, rawZoom));
         await chrome.tabs.setZoom(activeTab.id, zoomFactor);
         return { zoomFactor };
       }
